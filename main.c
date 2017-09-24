@@ -19,7 +19,12 @@ main(int argc, char *argv[])
     if(error == LE_NO_ERROR)
     {
         imgGray = convertToGray(imgRGB);
-
+#if 1
+        img = copy_image(&imgGray);
+        canny(img.mpData, img.mWidth, img.mHeight, 50, 125);
+        save_image("out.bmp", &img);
+        uint32 foundLines = hough(img.mpData, img.mWidth, img.mHeight, 8, lineBuffer, maxLines);
+#else
         uint64 currentTime;
         uint64 lastTime;
         uint64 startTime = current_time_ms();
@@ -46,7 +51,7 @@ main(int argc, char *argv[])
                 frames = 0;
             }
         }
-
+#endif
         // printf("found %d lines. (max %d)\n", foundLines, maxLines);
         // for(uint32 i = 0; i < foundLines; ++i)
         // {

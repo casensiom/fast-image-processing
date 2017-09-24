@@ -142,51 +142,59 @@ traceEdgesWithHysteresis(uint8 *_pData, const uint32 _width, const uint32 _heigh
 #else
     uint32 x, y;
 
-    // 4. Mark double threshold _tmin and _tmax
+    // Reuse array as a stack. width*height/2 elements should be enough.
+    uint32 numPoints = 0;
+    uint32 *pPoints = (uint32 *)_pWorkspace->pGradient;
+    
+    // Mark double threshold _tmin and _tmax
     uint8 *pData = _pData;
     double *pMax = _pWorkspace->pMaxima;
-    for (y = 0; y < _height; ++y) {
-        for (x = 0; x < _width; ++x) {
-            //int src_pos = x + (y * _width);
-            if (*pMax > _tmax)
-            {
-                *pData = MAX_BRIGHTNESS;
-            }
-            else if (*pMax > _tmin) 
+    uint32 i, size = _width * _height;
+
+    for (i = 0; i < size; ++i) {
+        if (*pMax > _tmax)
+        {
+            *pData = MAX_BRIGHTNESS;
+        }
+        else if (*pMax > _tmin) 
+        {
+            if(i > (_width + 1) && i < (size - _width - 1))
             {
                 *pData = TMP_BRIGHTNESS;
+                pPoints[numPoints] = i;
+                ++numPoints;
             }
             else 
             {
                 *pData = 0;
             }
-            ++pMax;
-            ++pData;
         }
+        else 
+        {
+            *pData = 0;
+        }
+        ++pMax;
+        ++pData;
     }
 
     // 5. Refine edges with hysteresis
-    pData = _pData;
-    for (y = 1; y < _height - 1; y++) {
-        for (x = 1; x < _width - 1; x++) {
-            //int src_pos = x + (y * _width);
-            if (*pData == TMP_BRIGHTNESS) {
-                if (*(pData - _width - 1) == MAX_BRIGHTNESS ||
-                    *(pData - _width) == MAX_BRIGHTNESS ||
-                    *(pData - _width + 1) == MAX_BRIGHTNESS || 
-                    *(pData - 1) == MAX_BRIGHTNESS || 
-                    *(pData + 1) == MAX_BRIGHTNESS ||
-                    *(pData + _width - 1) == MAX_BRIGHTNESS ||
-                    *(pData + _width) == MAX_BRIGHTNESS ||
-                    *(pData + _width + 1) == MAX_BRIGHTNESS) {
-                    *pData = MAX_BRIGHTNESS;
-                } else {
-                    *pData = 0;
-                }
-            }
-            ++pData;
+
+    for (i = 0; i < numPoints; ++i) 
+    {
+        pData = _pData + pPoints[i];
+        if (*(pData - _width - 1) == MAX_BRIGHTNESS ||
+            *(pData - _width) == MAX_BRIGHTNESS ||
+            *(pData - _width + 1) == MAX_BRIGHTNESS || 
+            *(pData - 1) == MAX_BRIGHTNESS || 
+            *(pData + 1) == MAX_BRIGHTNESS ||
+            *(pData + _width - 1) == MAX_BRIGHTNESS ||
+            *(pData + _width) == MAX_BRIGHTNESS ||
+            *(pData + _width + 1) == MAX_BRIGHTNESS)
+        {
+            *pData = MAX_BRIGHTNESS;
+        } else {
+            *pData = 0;
         }
-        pData += 2;
     }
 #endif
 }
