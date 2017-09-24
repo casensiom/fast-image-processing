@@ -98,7 +98,7 @@ uint32 load_image(const char *filename, SImage *pImage)
         return LE_CANT_READ;
     }
  
-    printf("Reading img: %dbpp, %d x %d\n", bitmapInfoHeader->bitspp, bitmapInfoHeader->width, bitmapInfoHeader->height);
+    //printf("Reading img: %dbpp, %d x %d\n", bitmapInfoHeader->bitspp, bitmapInfoHeader->width, bitmapInfoHeader->height);
     EPixelFormat pf = ((bitmapInfoHeader->bitspp == 32)?PF_ARGB:(bitmapInfoHeader->bitspp == 24)?PF_RGB:PF_GRAY);
     *pImage = create_image(bitmapInfoHeader->width, bitmapInfoHeader->height, pf);
     // allocate enough memory for the bitmap image data

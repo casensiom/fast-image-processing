@@ -42,6 +42,16 @@ void release_image(SImage *_pImg)
     }
     reset_image(_pImg);
 }
+//-------------------------------------
+SImage copy_image(SImage *_pImg)
+{
+    SImage dst;
+    dst = create_image(_pImg->mWidth, _pImg->mHeight, _pImg->mBpp);
+
+    uint32 size = _pImg->mWidth * _pImg->mHeight * _pImg->mBpp;
+    memcpy(dst.mpData, _pImg->mpData, size);
+    return dst;
+}
 
 //-------------------------------------
 SImage convertToGray(const SImage _source)

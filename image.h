@@ -21,6 +21,7 @@ typedef struct SImage {
 SImage create_image(uint32 _width, uint32 _height, EPixelFormat _format);
 void reset_image(SImage *_pImg);
 void release_image(SImage *_pImg);
+SImage copy_image(SImage *_pImg);
 SImage convertToGray(const SImage _source);
 void dump(const SImage _source);
 

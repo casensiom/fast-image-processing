@@ -90,9 +90,7 @@ uint32
 hough(uint8 *_pData, uint32 _width, uint32 _height, uint32 _threshold, SPolar *_lineBuffer, uint32 _size)
 {
 
-    printf("Hough called!\n");
     init_hough(_width, _height);
-    printf("Hough is initialized!\n");
     return HoughLinesStandard(_pData, _width, _height, _threshold, _lineBuffer, _size, spHoughWorkspace);
 }
 

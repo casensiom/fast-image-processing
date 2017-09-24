@@ -2,7 +2,9 @@
 #include "hough.h"
 #include "image.h"
 #include "bmp.h"
+#include "timer.h"
 #include <stdio.h>
+#include <time.h>
 
 int
 main(int argc, char *argv[])
@@ -12,23 +14,46 @@ main(int argc, char *argv[])
     const uint32 maxLines = 256;
     SPolar lineBuffer[maxLines];
 
-    SImage imgRGB;
+    SImage imgRGB, imgGray, img;
     ELoadError error = load_image(fileIn, &imgRGB);
     if(error == LE_NO_ERROR)
     {
-        SImage img = convertToGray(imgRGB);
-        printf("Canny\n");
-        canny(img.mpData, img.mWidth, img.mHeight, 50, 125);
-        save_image("out.bmp", &img);
+        imgGray = convertToGray(imgRGB);
 
-        printf("Hough\n");
-        uint32 foundLines = hough(img.mpData, img.mWidth, img.mHeight, 8, lineBuffer, maxLines);
+        uint64 currentTime;
+        uint64 lastTime;
+        uint64 startTime = current_time_ms();
+        uint32 frames = 0;
 
-        printf("found %d lines. (max %d)\n", foundLines, maxLines);
-        for(uint32 i = 0; i < foundLines; ++i)
+        lastTime = (current_time_ms() - startTime)/1000;
+        while(1)
         {
-            printf("line %d) r: %f, t: %f\n", i, lineBuffer[i].rho, lineBuffer[i].theta);
+            img = copy_image(&imgGray);
+
+            uint64 preTime = current_time_ms();
+            canny(img.mpData, img.mWidth, img.mHeight, 50, 125);
+            uint64 postTime = current_time_ms();
+            uint32 foundLines = hough(img.mpData, img.mWidth, img.mHeight, 8, lineBuffer, maxLines);
+            uint64 postTime2 = current_time_ms();
+            ++frames;
+
+            printf("canny: %llums, hough: %llums, total: %llums\n", postTime - preTime, postTime2 - postTime, postTime2 - preTime);
+            currentTime = (current_time_ms() - startTime)/1000;
+            if(currentTime != lastTime)
+            {
+                printf("fps: %d\n", frames);
+                lastTime = currentTime;
+                frames = 0;
+            }
         }
+
+        // printf("found %d lines. (max %d)\n", foundLines, maxLines);
+        // for(uint32 i = 0; i < foundLines; ++i)
+        // {
+        //     printf("line %d) r: %f, t: %f\n", i, lineBuffer[i].rho, lineBuffer[i].theta);
+        // }
+
+        //save_image("out.bmp", &img);
 
         realease_canny();
         realease_hough();
