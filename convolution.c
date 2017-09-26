@@ -3,6 +3,9 @@
 #include <string.h>
 #include <math.h>
 
+// Take care, enable this define can create artifacts in the vertical borders on small images
+#define IMPROVE_LOOPS
+
 uint8 applyConvolution(uint8 *_pData, uint32 _width, uint32 _height, uint32 _x, uint32 _y, uint8 *_pKernel, uint8 _kernel_size, uint32 _kernel_sum);
 uint8 decodeSegment(uint32 x, uint32 y);
 
@@ -24,10 +27,18 @@ void getGradientsAndDirections(uint8 *_pData, uint32 _width, uint32 _height, dou
     int leap = kernel_size - 1;
     int offset_xy = kernel_half;  // 3x3
     int src_pos = offset_xy + (offset_xy * _width);
+
+
+#ifdef IMPROVE_LOOPS
+    uint32 i, size = _height * _width - (_width * offset_xy * 2);
+    for(i = 0; i < size; ++i)
+    {
+#else
     for (int y = offset_xy; y < _height - offset_xy; ++y) 
     {
         for (int x = offset_xy; x < _width - offset_xy; ++x) 
         {
+#endif
             int32 convolve_X = 0.0;
             int32 convolve_Y = 0.0;
 
@@ -48,8 +59,10 @@ void getGradientsAndDirections(uint8 *_pData, uint32 _width, uint32 _height, dou
 
             ++src_pos;
         }
+#ifndef IMPROVE_LOOPS
         src_pos += leap;
     }
+#endif
 }
 
 //-------------------------------------
@@ -76,29 +89,37 @@ void computeLocalMaxima(uint32 _width, uint32 _height, double *_pGradient, uint8
     double *pMax = _pMaxima + pos;
     uint8 *pDir = _pDirection + pos;
 
+#ifdef IMPROVE_LOOPS
+    uint32 i, size = _height * _width - (_width * offset_xy * 2);
+    for (i = 0; i < size; ++i)
+    {
+#else
+
     for (int y = offset_xy; y < _height - offset_xy; ++y) 
     {
-        for (int x = offset_xy; x < _width - offset_xy; ++x) 
+    for (int x = offset_xy; x < _width - offset_xy; ++x) 
+    {
+#endif
+        if ((*pDir == 0 ) ||
+            (*pDir == 1 && (*(pGrad + ll) >= *pGrad || *(pGrad + rr) >= *pGrad)) ||
+            (*pDir == 2 && (*(pGrad + rt) >= *pGrad || *(pGrad + lb) >= *pGrad)) ||
+            (*pDir == 3 && (*(pGrad + tt) >= *pGrad || *(pGrad + bb) >= *pGrad)) ||
+            (*pDir == 4 && (*(pGrad + lt) >= *pGrad || *(pGrad + rb) >= *pGrad)))
         {
-            if ((*pDir == 0 ) ||
-                (*pDir == 1 && (*(pGrad + ll) >= *pGrad || *(pGrad + rr) >= *pGrad)) ||
-                (*pDir == 2 && (*(pGrad + rt) >= *pGrad || *(pGrad + lb) >= *pGrad)) ||
-                (*pDir == 3 && (*(pGrad + tt) >= *pGrad || *(pGrad + bb) >= *pGrad)) ||
-                (*pDir == 4 && (*(pGrad + lt) >= *pGrad || *(pGrad + rb) >= *pGrad)))
-            {
-                *pMax = 0;
-            }
-
-            ++pos;
-            ++pGrad;
-            ++pMax;
-            ++pDir;
+            *pMax = 0;
         }
+        ++pGrad;
+        ++pMax;
+        ++pDir;
+    }
+
+#ifndef IMPROVE_LOOPS
         pos += leap;
         pGrad += leap;
         pMax += leap;
         pDir += leap;
     }
+#endif
 }
 
 //-------------------------------------
