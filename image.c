@@ -43,14 +43,19 @@ void release_image(SImage *_pImg)
     reset_image(_pImg);
 }
 //-------------------------------------
-SImage copy_image(SImage *_pImg)
+void copy_image(SImage *_pImg, SImage *_pCopy)
 {
-    SImage dst;
-    dst = create_image(_pImg->mWidth, _pImg->mHeight, _pImg->mBpp);
+    if(_pCopy == 0x0)
+        return;
+
+    if(_pCopy->mWidth != _pImg->mWidth || _pCopy->mHeight != _pImg->mHeight || _pCopy->mBpp != _pImg->mBpp )
+    {
+        release_image(_pCopy);
+        *_pCopy = create_image(_pImg->mWidth, _pImg->mHeight, _pImg->mBpp);
+    }
 
     uint32 size = _pImg->mWidth * _pImg->mHeight * _pImg->mBpp;
-    memcpy(dst.mpData, _pImg->mpData, size);
-    return dst;
+    memcpy(_pCopy->mpData, _pImg->mpData, size);
 }
 
 //-------------------------------------
@@ -100,6 +105,53 @@ SImage convertToGray(const SImage _source)
     return pDst;
 }
 
+//-------------------------------------
+SImage convertToARGB(const SImage _source)
+{
+    SImage pDst;
+    uint8 *pData = (uint8 *)_source.mpData;
+
+    uint32 i, size = _source.mWidth * _source.mHeight;
+    uint8 r, g, b;
+    reset_image(&pDst);
+    pDst = create_image(_source.mWidth, _source.mHeight, PF_ARGB);
+    if(_source.mBpp == PF_GRAY)
+    {
+        uint32 *pDataOut = (uint32 *)pDst.mpData;
+        for(i = 0; i < size; ++i)
+        {
+            uint32 g = *pData;
+            uint32 color = (g << 24) | (g << 16) | (g<<8);
+            pDataOut[i] = color;
+            ++pData;
+        }
+    }
+    else 
+    {
+        if(_source.mBpp == PF_ARGB)
+        {
+            memcpy(pDst.mpData, pData, size*4);
+        }
+        else if(_source.mBpp == PF_RGB)
+        {
+            for(i = 0; i < size; ++i)
+            {
+                pDst.mpData[i*3 + 0] = *pData;
+                ++pData;
+                pDst.mpData[i*3 + 1] = *pData;
+                ++pData;
+                pDst.mpData[i*3 + 2] = *pData;
+                ++pData;
+            }
+        }
+        else 
+        {
+            // ERROR !!!!
+        }
+    }
+    return pDst;
+}
+
 
 void dump(const SImage _source)
 {
@@ -119,3 +171,106 @@ void dump(const SImage _source)
     }
 }
 
+
+
+void draw_line_4bpp(SImage *_pImage, uint32 color, int x0, int y0, int x1, int y1)
+{
+    uint8 a = ((color>>24) & 0xFF);
+    uint8 r = ((color>>16) & 0xFF);
+    uint8 g = ((color>>8) & 0xFF);
+    uint8 b = ((color) & 0xFF);
+    uint32 pos;
+    int dx, dy, p, x, y;
+    dx=x1-x0;
+    dy=y1-y0;
+    x=x0;
+    y=y0;
+    p=2*dy-dx;
+ 
+    while(x<x1)
+    {
+        if( x >= 0 && x < _pImage->mWidth && y >= 0 && y < _pImage->mHeight)
+        {
+            pos = x + y * _pImage->mWidth;
+            ((uint32 *)_pImage->mpData)[pos] = color;
+        }
+        p += 2*dy;
+        if(p>=0)
+        {
+            ++y;
+            p -= 2*dx;
+        }
+        ++x;
+    }
+}
+
+
+void draw_line_3bpp(SImage *_pImage, uint32 color, int x0, int y0, int x1, int y1)
+{
+    uint8 r = ((color>>16) & 0xFF);
+    uint8 g = ((color>>8) & 0xFF);
+    uint8 b = ((color) & 0xFF);
+    uint32 pos;
+    int dx, dy, p, x, y;
+    dx=x1-x0;
+    dy=y1-y0;
+    x=x0;
+    y=y0;
+    p=2*dy-dx;
+ 
+    while(x<x1)
+    {
+        if( x >= 0 && x < _pImage->mWidth && y >= 0 && y < _pImage->mHeight)
+        {
+            pos = x*3 + y * _pImage->mWidth*3;
+            _pImage->mpData[pos + 0] = r;
+            _pImage->mpData[pos + 1] = g;
+            _pImage->mpData[pos + 2] = b;
+        }
+        p += 2*dy;
+        if(p>=0)
+        {
+            ++y;
+            p -= 2*dx;
+        }
+        ++x;
+    }
+}
+
+
+void draw_line_1bpp(SImage *_pImage, uint32 color, int x0, int y0, int x1, int y1)
+{
+    uint8 col = (0.298f * (float)((color>>16) & 0xFF) + 0.586f * (float)((color>>8) & 0xFF) + 0.114f * (float)((color) & 0xFF));
+    int dx, dy, p, x, y;
+    dx=x1-x0;
+    dy=y1-y0;
+    x=x0;
+    y=y0;
+    p=2*dy-dx;
+ 
+    while(x<x1)
+    {
+        if( x >= 0 && x < _pImage->mWidth && y >= 0 && y < _pImage->mHeight)
+            _pImage->mpData[x + y * _pImage->mWidth] = col;
+        p += 2*dy;
+        if(p>=0)
+        {
+            ++y;
+            p -= 2*dx;
+        }
+        ++x;
+    }
+}
+
+void draw_line(SImage *_pImage, uint32 color, int x0, int y0, int x1, int y1)
+{
+    if(_pImage != 0x0 && _pImage->mpData != 0x0)
+    {
+        if(_pImage->mBpp == 4)
+            draw_line_4bpp(_pImage, color, x0, y0, x1, y1);
+        else if(_pImage->mBpp == 3)
+            draw_line_3bpp(_pImage, color, x0, y0, x1, y1);
+        else if(_pImage->mBpp == 1)
+            draw_line_1bpp(_pImage, color, x0, y0, x1, y1);
+    }
+}

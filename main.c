@@ -5,6 +5,9 @@
 #include "timer.h"
 #include <stdio.h>
 #include <time.h>
+#include <math.h>
+
+void draw(SImage *_pImg, float _theta, float _rho);
 
 int
 main(int argc, char *argv[])
@@ -25,7 +28,7 @@ main(int argc, char *argv[])
     {
         imgGray = convertToGray(imgRGB);
 #if 1
-        img = copy_image(&imgGray);
+        copy_image(&imgGray, &img);
         canny(img.mpData, img.mWidth, img.mHeight, 50, 125);
         save_image("out.bmp", &img);
         uint32 foundLines = hough(img.mpData, img.mWidth, img.mHeight, 8, lineBuffer, maxLines);
@@ -38,7 +41,7 @@ main(int argc, char *argv[])
         lastTime = (current_time_ms() - startTime)/1000;
         while(1)
         {
-            img = copy_image(&imgGray);
+            copy_image(&imgGray, &img);
 
             uint64 preTime = current_time_ms();
             canny(img.mpData, img.mWidth, img.mHeight, 50, 125);
@@ -97,5 +100,41 @@ main(int argc, char *argv[])
     release_hough();
 
     return 0;
+}
+
+void draw(SImage *_pImg, float _theta, float _rho)
+{
+    int x1, y1, x2, y2;
+    uint32 w = _pImg->mWidth;
+    uint32 h = _pImg->mHeight;
+
+
+    double      a = cos(_theta);
+    double      b = sin(_theta);
+    double      x0 = a * _rho;
+    double      y0 = b * _rho;
+    double      x = x0 - b;
+    double      y = y0 + a;
+
+    double      coefA = ((x != x0) ? ((y - y0) / (x - x0)) : 0.0);
+    double      coefB = y0 - (coefA * x0);
+
+    if (fabs(b) < 0.5)
+    {//vertical line : from y = 0 to y = frameSize.height
+        y1 = 0;
+        x1 = coefA != 0.0 ? (int)(-coefB / coefA) : (int)x0;
+        y2 = h;
+        x2 = coefA != 0.0 ? (int)((y2 - coefB) / coefA) : (int)x0;
+    }
+    else
+    {//horizontal line : from x = 0 to x = frameSize.width
+        x1 = 0;
+        y1 = (int)coefB;
+        x2 = w;
+        y2 = (int)(coefA * x2 + coefB);
+    }
+
+    //printf("draw line: t:%f, r:%f => (%d, %d) - (%d, %d)\n", _theta, _rho, x1, y1, x2, y2);
+    draw_line(_pImg, 0xFF00FF, x1, y1, x2, y2);
 }
 
