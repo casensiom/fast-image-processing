@@ -52,9 +52,10 @@ init_canny(const uint32 _width, const uint32 _height)
 
 //-------------------------------------
 void
-realease_canny()
+release_canny()
 {
     release_workspace_canny(spCannyWorkspace);
+    spCannyWorkspace = 0x0;
 }
 
 //-------------------------------------
@@ -250,4 +251,3 @@ release_workspace_canny(SCannyWorkspace *_pWorkspace)
         free(_pWorkspace);
     }
 }
-

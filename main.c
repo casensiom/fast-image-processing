@@ -15,6 +15,11 @@ main(int argc, char *argv[])
     SPolar lineBuffer[maxLines];
 
     SImage imgRGB, imgGray, img;
+
+    reset_image(&imgRGB);
+    reset_image(&imgGray);
+    reset_image(&img);
+
     ELoadError error = load_image(fileIn, &imgRGB);
     if(error == LE_NO_ERROR)
     {
@@ -60,8 +65,6 @@ main(int argc, char *argv[])
 
         //save_image("out.bmp", &img);
 
-        realease_canny();
-        realease_hough();
     }
     else
     {
@@ -86,5 +89,13 @@ main(int argc, char *argv[])
         }
         printf("Error '%s' while opening '%s'\n", pError, fileIn);
     }
+
+    release_image(&imgRGB);
+    release_image(&imgGray);
+    release_image(&img);
+    release_canny();
+    release_hough();
+
     return 0;
 }
+

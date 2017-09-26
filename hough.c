@@ -80,9 +80,10 @@ init_hough_ex(const uint32 _width, const uint32 _height, const float _rho, const
 
 //-------------------------------------
 void
-realease_hough()
+release_hough()
 {
     release_workspace_hough(spHoughWorkspace);
+    spHoughWorkspace = 0x0;
 }
 
 //-------------------------------------

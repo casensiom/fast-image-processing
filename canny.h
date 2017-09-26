@@ -8,7 +8,7 @@
 #include "types.h"
 
 void init_canny(const uint32 _width, const uint32 _height);
-void realease_canny();
+void release_canny();
 void canny(uint8 *_pData, uint32 _width, uint32 _height, const uint32 _tmin, const uint32 _tmax);
 
 #endif
