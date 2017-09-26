@@ -31,12 +31,25 @@ main(int argc, char *argv[])
         copy_image(&imgGray, &img);
         canny(img.mpData, img.mWidth, img.mHeight, 50, 125);
         save_image("out.bmp", &img);
-        uint32 foundLines = hough(img.mpData, img.mWidth, img.mHeight, 8, lineBuffer, maxLines);
+        uint32 foundLines = hough(img.mpData, img.mWidth, img.mHeight, 90, lineBuffer, maxLines);
+        printf("%d lines found.\n", foundLines);
+
+
+        release_image(&imgRGB);
+        imgRGB = convertToARGB(img);
+        uint32 i;
+        for(i =0; i < foundLines; ++i)
+        {
+            draw(&imgRGB, lineBuffer[i].theta, lineBuffer[i].rho);
+        }
+        save_image("out_hough.bmp", &imgRGB);
 #else
         uint64 currentTime;
         uint64 lastTime;
         uint64 startTime = current_time_ms();
         uint32 frames = 0;
+        uint64 cannyTime = 0;
+        uint64 houghTime = 0;
 
         lastTime = (current_time_ms() - startTime)/1000;
         while(1)
@@ -49,13 +62,17 @@ main(int argc, char *argv[])
             uint32 foundLines = hough(img.mpData, img.mWidth, img.mHeight, 8, lineBuffer, maxLines);
             uint64 postTime2 = current_time_ms();
             ++frames;
+            cannyTime += postTime - preTime;
+            houghTime += postTime2 - postTime;
 
-            printf("canny: %llums, hough: %llums, total: %llums\n", postTime - preTime, postTime2 - postTime, postTime2 - preTime);
+            //printf("canny: %llums, hough: %llums, total: %llums\n", postTime - preTime, postTime2 - postTime, postTime2 - preTime);
             currentTime = (current_time_ms() - startTime)/1000;
             if(currentTime != lastTime)
             {
-                printf("fps: %d\n", frames);
+                printf("fps: %d, canny: %fms, hough: %fms\n", frames, (double)cannyTime / (double)frames, (double)houghTime / (double)frames);
                 lastTime = currentTime;
+                cannyTime = 0;
+                houghTime = 0;
                 frames = 0;
             }
         }
