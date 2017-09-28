@@ -18,19 +18,20 @@ typedef struct SHoughWorkspace
     //--
     uint32 width;
     uint32 height;
-    uint32 numAngle;
-    uint32 numRho;
-    float rho;
-    float theta;
-    double minTheta;
-    double maxTheta;
+    double accMaxR;
+    uint32 accHeight;
+    uint32 accWidth;
+    uint32 *pAccum;
+    uint32 accCenterX;
+    uint32 accCenterY;
 
     //--
-    uint32 *pAcc;
-    float *pSin;
-    float *pCos;
     SCollisionPoint *pCandidates;
     uint32 numCandidates;
+
+    //--
+    float *pSin;
+    float *pCos;
 
 } SHoughWorkspace;
 //-------------------------------------
@@ -41,40 +42,26 @@ static SHoughWorkspace *spHoughWorkspace = 0x0;
 //-------------------------------------
 
 uint32 HoughLinesStandard(uint8 *_pData, uint32 _width, uint32 _height, uint32 _threshold, SPolar *_lineBuffer, uint32 _size, SHoughWorkspace *_pWorkspace);
+uint8 CheckMaximaLocal(uint32 *_pAccum, uint32 _index, uint32 _width, uint32 _height);
 uint8 insert_sort(uint32 _idx, uint32 _acc, SHoughWorkspace *_pWorkspace);
-SHoughWorkspace *create_workspace_hough(const uint32 _width, const uint32 _height, const float _rho, const float _theta, const double _minTheta, const double _maxTheta);
+SHoughWorkspace *create_workspace_hough(const uint32 _width, const uint32 _height);
 void reset_workspace_hough(SHoughWorkspace *_pWorkspace);
 void release_workspace_hough(SHoughWorkspace *_pWorkspace);
 //-------------------------------------
-
 
 //-------------------------------------
 void
 init_hough(const uint32 _width, const uint32 _height)
 {
-    float rho = 1;
-    float theta = M_PI/180.0f;
-    double minTheta = 0;
-    double maxTheta = M_PI;
-    init_hough_ex(_width, _height, rho, theta, minTheta, maxTheta);
-}
-
-//-------------------------------------
-void
-init_hough_ex(const uint32 _width, const uint32 _height, const float _rho, const float _theta, 
-    const double _minTheta, const double _maxTheta)
-{
     if(spHoughWorkspace == 0x0)
     {
-        spHoughWorkspace = create_workspace_hough(_width, _height, _rho, _theta, _minTheta, _maxTheta);
+        spHoughWorkspace = create_workspace_hough(_width, _height);
     }
-    else if(spHoughWorkspace->width != _width || spHoughWorkspace->height != _height ||
-            spHoughWorkspace->rho != _rho ||  spHoughWorkspace->theta != _theta ||
-            spHoughWorkspace->minTheta != _minTheta || spHoughWorkspace->maxTheta != _maxTheta)
+    else if(spHoughWorkspace->width != _width || spHoughWorkspace->height != _height)
     {
-        // TODO: Alert the user that using canny in different image sizes can decrease the efficiency
+        // TODO: Alert the user that using hough in different image sizes can decrease the efficiency
         release_workspace_hough(spHoughWorkspace);
-        spHoughWorkspace = create_workspace_hough(_width, _height, _rho, _theta, _minTheta, _maxTheta);
+        spHoughWorkspace = create_workspace_hough(_width, _height);
     }
 }
 
@@ -90,7 +77,6 @@ release_hough()
 uint32
 hough(uint8 *_pData, uint32 _width, uint32 _height, uint32 _threshold, SPolar *_lineBuffer, uint32 _size)
 {
-
     init_hough(_width, _height);
     return HoughLinesStandard(_pData, _width, _height, _threshold, _lineBuffer, _size, spHoughWorkspace);
 }
@@ -103,77 +89,82 @@ uint32
 HoughLinesStandard(uint8 *_pData, uint32 _width, uint32 _height, uint32 _threshold, 
                     SPolar *_lineBuffer, uint32 _size, SHoughWorkspace *_pWorkspace)
 {
-    uint32 i, j;
+    int32 x, y, r, t;
 
-    float rho = _pWorkspace->rho;
-    float theta = _pWorkspace->theta;
-    double minTheta = _pWorkspace->minTheta;
-    double maxTheta = _pWorkspace->maxTheta;
-    uint32 numAngle = _pWorkspace->numAngle;
-    uint32 numRho = _pWorkspace->numRho;
-    uint32 *pAccum = _pWorkspace->pAcc;
+    uint32 *pAccum = _pWorkspace->pAccum;
     float *pSin = _pWorkspace->pSin;
     float *pCos = _pWorkspace->pCos;
+    int32 centerX = _width / 2;
+    int32 centerY = _height / 2;
+    double accMaxR = _pWorkspace->accMaxR;
     uint8* pData = _pData;
-
-    //float irho = 1.0f / rho;
 
     reset_workspace_hough(_pWorkspace);
 
     // stage 1. fill accumulator
-    for( i = 0; i < _height; ++i )
+    for( y = 0; y < _height; ++y )
     {
-        for( j = 0; j < _width; ++j )
+        for( x = 0; x < _width; ++x )
         {
-            if( *pData != 0 )
+            if( *_pData > 0 )
             {
-                for(uint32 n = 0; n < numAngle; ++n )
+                //printf(" - pixel white\n");
+                for(t = 0; t < _pWorkspace->accWidth; ++t )
                 {
-                    uint32 r = (uint32)(( j * pCos[n] + i * pSin[n] ) + 0.5f);
-                    r += (numRho - 1) / 2;
-                    pAccum[(n+1) * (numRho+2) + r+1]++;
+                    double r = ((double)(x - centerX) * pCos[t]) + ((double)(y - centerY) * pSin[t]) + accMaxR;  
+                    pAccum[(int)((r * (double)_pWorkspace->accWidth) + 0.5) + t]++; 
                 }
             }
-            ++pData;
+            ++_pData;
         }
     }
+
 
     // stage 2. find local maximums and store the candidates in a sorted array
-    for(uint32 r = 0; r < numRho; ++r )
+    for(r = 0; r < _pWorkspace->accHeight; ++r )
     {
-        for(uint32 n = 0; n < numAngle; ++n )
+        for(t = 0; t < _pWorkspace->accWidth; ++t )
         {
-            uint32 base = (n+1) * (numRho+2) + r+1;
-            if( pAccum[base] > _threshold &&
-                pAccum[base] > pAccum[base - 1] && pAccum[base] >= pAccum[base + 1] &&
-                pAccum[base] > pAccum[base - numRho - 2] && pAccum[base] >= pAccum[base + numRho + 2] )
+            uint32 base = (r * _pWorkspace->accWidth) + t;
+            if( pAccum[base] > _threshold && CheckMaximaLocal(pAccum, base, _pWorkspace->accWidth, _pWorkspace->accHeight) == 0)
             {
+                //printf(" - Sort line %d (r: %d, t: %d)\n", base, r, t);
                 insert_sort(base, pAccum[base], _pWorkspace);
-                if(_pWorkspace->numCandidates >= _size)
-                {
-                    r = numRho;
-                    n = numAngle;
-                    break;
-                }
             }
         }
     }
 
-    // stage 4. store the first lines to the output buffer
-    uint32 linesMax = ((_size <= _pWorkspace->numCandidates) ? _size : _pWorkspace->numCandidates);
-    double scale = 1./(numRho+2);
+    // stage 3. store the first lines to the output buffer
+    uint32 i, linesMax = ((_size <= _pWorkspace->numCandidates) ? _size : _pWorkspace->numCandidates);
     for( i = 0; i < linesMax; i++ )
     {
         SPolar line;
-        int32 idx = _pWorkspace->pCandidates[i].index;
-        int32 n = (int32)((idx*scale) - 1);
-        int32 r = idx - (n+1)*(numRho+2) - 1;
-        line.rho = (r - (numRho - 1)*0.5f) * rho;
-        line.theta = ((float)minTheta) + (float)n * theta;
+        int32 idx  = _pWorkspace->pCandidates[i].index;
+        line.rho   = (float)(((float)idx / (float)_pWorkspace->accWidth) - accMaxR);
+        line.theta = (float)((idx % _pWorkspace->accWidth) * DEG2RAD);
         _lineBuffer[i] = line;
+        printf(" * Save line %d (r: %f, t: %f) = %d\n", idx, line.rho, line.theta, _pWorkspace->pCandidates[i].acc);
     }
 
     return linesMax;
+}
+
+//-------------------------------------
+uint8
+CheckMaximaLocal(uint32 *_pAccum, uint32 _index, uint32 _width, uint32 _height)
+{
+    uint8 ret = 0;
+#define CHECK_MAXIMA_SIDES
+#ifdef CHECK_MAXIMA_SIDES
+        ret = (_index > _width && _index < (_height -1)*_width && 
+                _pAccum[_index] >  _pAccum[_index - 1] && 
+                _pAccum[_index] >= _pAccum[_index + 1] &&
+                _pAccum[_index] >  _pAccum[_index - _width] && 
+                _pAccum[_index] >= _pAccum[_index + _width] ) ? 0 : 1;
+
+#else
+#endif
+    return ret;
 }
 
 //-------------------------------------
@@ -212,47 +203,31 @@ insert_sort(uint32 _idx, uint32 _acc, SHoughWorkspace *_pWorkspace)
 
 //-------------------------------------
 SHoughWorkspace *
-create_workspace_hough(const uint32 _width, const uint32 _height, const float _rho, const float _theta, const double _minTheta, const double _maxTheta)
+create_workspace_hough(const uint32 _width, const uint32 _height)
 {
-
-
     SHoughWorkspace * work = (SHoughWorkspace *)malloc(sizeof(SHoughWorkspace));
 
-    double minTheta = _minTheta;
-    double maxTheta = _maxTheta;
-    if(minTheta > maxTheta) 
-    {
-        double temp = maxTheta;
-        maxTheta = minTheta;
-        minTheta = temp;
-    }
-
-    uint32 numAngle = (uint32)(((maxTheta - minTheta) / _theta) + 0.5f);
-    uint32 numRho = (uint32)((((_width + _height) * 2 + 1) / _rho) + 0.5f);
-    //--
+    
     work->width    = _width;
     work->height   = _height;
-    work->rho      = _rho;
-    work->theta    = _theta;
-    work->minTheta = minTheta;
-    work->maxTheta = maxTheta;
-    work->numAngle = numAngle;
-    work->numRho   = numRho;
+    work->accMaxR    = ((sqrt(2.0) * (double)((_height>_width)?_height:_width)) / 2.0);  
+    work->accHeight  = (uint32)(work->accMaxR * 2.0 + 0.5); // -r -> +r  
+    work->accWidth   = 180;
+    work->pAccum     = (uint32 *)malloc(work->accWidth * work->accHeight * sizeof(uint32));
+    work->accCenterX = _width >> 1;
+    work->accCenterY = _height >> 1;
 
-    work->pSin = (float *)malloc(numAngle * sizeof(float));
-    work->pCos = (float *)malloc(numAngle * sizeof(float));
-    work->pAcc = (uint32 *)malloc((numAngle+2) * (numRho+2) * sizeof(uint32));
-    work->pCandidates = (SCollisionPoint *)malloc((numAngle+2) * (numRho+2) * sizeof(SCollisionPoint));
+    work->pCandidates = (SCollisionPoint *)malloc(work->accWidth * work->accHeight * sizeof(SCollisionPoint));
     work->numCandidates = 0;
 
-    //printf("Creating hough workpace with: width: %d, height: %d, numAngle: %d, numRho: %d, rho: %f, theta: %f, minTheta: %f, maxTheta: %f\n", _width, _height, numAngle, numRho, _rho, _theta, minTheta, maxTheta);
+    printf("Creating hough workpace with: width: %d, height: %d, accMaxR: %f, maxR: %d, maxT: %d\n", _width, _height, work->accMaxR, work->accHeight, work->accWidth);
 
-    float irho = 1 / _rho;
-    float ang = minTheta;
-    for(int n = 0; n < numAngle; ang += _theta, ++n)
+    work->pSin = (float *)malloc(180 * sizeof(float));
+    work->pCos = (float *)malloc(180 * sizeof(float));
+    for(int n = 0; n < 180; ++n)
     {
-        work->pSin[n] = (float)(sin((double)ang) * irho);
-        work->pCos[n] = (float)(cos((double)ang) * irho);
+        work->pSin[n] = (float)(sin((double)n * DEG2RAD));
+        work->pCos[n] = (float)(cos((double)n * DEG2RAD));
     }
 
     return work;
@@ -262,8 +237,8 @@ create_workspace_hough(const uint32 _width, const uint32 _height, const float _r
 void
 reset_workspace_hough(SHoughWorkspace *_pWorkspace)
 {
-    memset(_pWorkspace->pAcc, 0, sizeof(_pWorkspace->pAcc[0]) * (_pWorkspace->numAngle+2) * (_pWorkspace->numRho+2));
-    memset(_pWorkspace->pCandidates, 0, sizeof(_pWorkspace->pCandidates[0]) * (_pWorkspace->numAngle+2) * (_pWorkspace->numRho+2));
+    memset(_pWorkspace->pAccum, 0, sizeof(_pWorkspace->pAccum[0]) * _pWorkspace->accWidth * _pWorkspace->accHeight);
+    memset(_pWorkspace->pCandidates, 0, sizeof(_pWorkspace->pCandidates[0]) * _pWorkspace->accWidth * _pWorkspace->accHeight);
     _pWorkspace->numCandidates = 0;
 }
 //-------------------------------------
@@ -272,13 +247,17 @@ release_workspace_hough(SHoughWorkspace *_pWorkspace)
 {
     if(_pWorkspace != 0x0) 
     {
-        _pWorkspace->numAngle  = 0;
-        _pWorkspace->numRho = 0;
         _pWorkspace->numCandidates = 0;
-        if(_pWorkspace->pAcc != 0x0)
+        if(_pWorkspace->pAccum != 0x0)
         {
-            free(_pWorkspace->pAcc);
-            _pWorkspace->pAcc = 0x0;
+            free(_pWorkspace->pAccum);
+            _pWorkspace->pAccum = 0x0;
+        }
+
+        if(_pWorkspace->pCandidates != 0x0)
+        {
+            free(_pWorkspace->pCandidates);
+            _pWorkspace->pCandidates = 0x0;
         }
 
         if(_pWorkspace->pSin != 0x0)
@@ -291,12 +270,6 @@ release_workspace_hough(SHoughWorkspace *_pWorkspace)
         {
             free(_pWorkspace->pCos);
             _pWorkspace->pCos = 0x0;
-        }
-
-        if(_pWorkspace->pCandidates != 0x0)
-        {
-            free(_pWorkspace->pCandidates);
-            _pWorkspace->pCandidates = 0x0;
         }
 
         free(_pWorkspace);

@@ -16,4 +16,12 @@ typedef unsigned long long uint64;
 #define M_PI 3.14159265358979323846264338327
 #endif
 
+#ifndef DEG2RAD 
+#define DEG2RAD (M_PI / 180.0)
+#endif
+
+#ifndef RAD2DEG 
+#define RAD2DEG (180.0 / M_PI)
+#endif
+
 #endif

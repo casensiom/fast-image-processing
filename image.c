@@ -112,7 +112,7 @@ SImage convertToARGB(const SImage _source)
     uint8 *pData = (uint8 *)_source.mpData;
 
     uint32 i, size = _source.mWidth * _source.mHeight;
-    uint8 r, g, b;
+    //uint8 r, g, b;
     reset_image(&pDst);
     pDst = create_image(_source.mWidth, _source.mHeight, PF_ARGB);
     if(_source.mBpp == PF_GRAY)
@@ -155,16 +155,21 @@ SImage convertToARGB(const SImage _source)
 
 void dump(const SImage _source)
 {
-    printf("\n\nImage %d x %d (%d bpp)\n", _source.mWidth, _source.mHeight, _source.mBpp);
-    for (int y = 0; y < _source.mHeight; ++y)
+    dump_data(_source.mpData, _source.mWidth, _source.mHeight, _source.mBpp);
+}
+
+void dump_data(const uint8*_pData, const uint32 _width, const uint32 _height, const uint32 _bpp)
+{
+    printf("\n\nImage %d x %d (%d bpp)\n", _width, _height, _bpp);
+    for (int y = 0; y < _height; ++y)
     {
-        for (int x = 0; x < _source.mWidth; ++x)
+        for (int x = 0; x < _width; ++x)
         {
-            if(_source.mBpp == 4)
+            if(_bpp == 4)
             {
-                printf(" %08X", ((uint32 *)_source.mpData)[x + y * _source.mWidth]);
+                printf(" %08X", ((uint32 *)_pData)[x + y * _width]);
             } else {
-                printf(" %02X", _source.mpData[x + y * _source.mWidth]);
+                printf(" %02X", _pData[x + y * _width]);
             }
         }
         printf("\n");
@@ -175,10 +180,6 @@ void dump(const SImage _source)
 
 void draw_line_4bpp(SImage *_pImage, uint32 color, int x0, int y0, int x1, int y1)
 {
-    uint8 a = ((color>>24) & 0xFF);
-    uint8 r = ((color>>16) & 0xFF);
-    uint8 g = ((color>>8) & 0xFF);
-    uint8 b = ((color) & 0xFF);
     uint32 pos;
     int dx, dy, p, x, y;
     dx=x1-x0;
@@ -266,6 +267,8 @@ void draw_line(SImage *_pImage, uint32 color, int x0, int y0, int x1, int y1)
 {
     if(_pImage != 0x0 && _pImage->mpData != 0x0)
     {
+        //y0 = _pImage->mHeight - y0;
+        //y1 = _pImage->mHeight - y1;
         if(_pImage->mBpp == 4)
             draw_line_4bpp(_pImage, color, x0, y0, x1, y1);
         else if(_pImage->mBpp == 3)

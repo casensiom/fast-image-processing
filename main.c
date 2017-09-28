@@ -7,6 +7,7 @@
 #include <time.h>
 #include <math.h>
 
+void draw2(SImage *_pImg, float _theta, float _rho);
 void draw(SImage *_pImg, float _theta, float _rho);
 
 int
@@ -14,7 +15,7 @@ main(int argc, char *argv[])
 {
     const char *fileIn = "in.bmp";
 
-    const uint32 maxLines = 256;
+    const uint32 maxLines = 16;
     SPolar lineBuffer[maxLines];
 
     SImage imgRGB, imgGray, img;
@@ -31,7 +32,7 @@ main(int argc, char *argv[])
         copy_image(&imgGray, &img);
         canny(img.mpData, img.mWidth, img.mHeight, 50, 125);
         save_image("out.bmp", &img);
-        uint32 foundLines = hough(img.mpData, img.mWidth, img.mHeight, 90, lineBuffer, maxLines);
+        uint32 foundLines = hough(img.mpData, img.mWidth, img.mHeight, 14, lineBuffer, maxLines);
         printf("%d lines found.\n", foundLines);
 
 
@@ -41,7 +42,9 @@ main(int argc, char *argv[])
         for(i =0; i < foundLines; ++i)
         {
             draw(&imgRGB, lineBuffer[i].theta, lineBuffer[i].rho);
+            draw2(&imgRGB, lineBuffer[i].theta, lineBuffer[i].rho);
         }
+        draw_line(&imgRGB, 0xFF0000, 0, 0, imgRGB.mWidth, imgRGB.mHeight);
         save_image("out_hough.bmp", &imgRGB);
 #else
         uint64 currentTime;
@@ -119,6 +122,34 @@ main(int argc, char *argv[])
     return 0;
 }
 
+
+void draw2(SImage *_pImg, float _theta, float _rho)
+{
+    int x1, y1, x2, y2;
+    x1 = y1 = x2 = y2 = 0;
+    uint32 w = _pImg->mWidth;
+    uint32 h = _pImg->mHeight;
+
+    if(_theta >= 45*DEG2RAD && _theta <= 135*DEG2RAD)
+    {
+        //y = (r - x cos(t)) / sin(t)
+        x1 = 0;
+        y1 = ((double)(_rho) - ((x1 - (w/2) ) * cos(_theta))) / sin(_theta) + (h / 2);
+        x2 = w;
+        y2 = ((double)(_rho) - ((x2 - (w/2) ) * cos(_theta))) / sin(_theta) + (h / 2);
+    }
+    else
+    {
+        //x = (r - y sin(t)) / cos(t);
+        y1 = 0;
+        x1 = ((double)(_rho) - ((y1 - (h/2) ) * sin(_theta))) / cos(_theta) + (w / 2);
+        y2 = h;
+        x2 = ((double)(_rho) - ((y2 - (h/2) ) * sin(_theta))) / cos(_theta) + (w / 2);
+    }
+    printf("draw line2: t:%f, r:%f => (%d, %d) - (%d, %d)\n", _theta, _rho, x1, y1, x2, y2);
+}
+
+
 void draw(SImage *_pImg, float _theta, float _rho)
 {
     int x1, y1, x2, y2;
@@ -151,7 +182,7 @@ void draw(SImage *_pImg, float _theta, float _rho)
         y2 = (int)(coefA * x2 + coefB);
     }
 
-    //printf("draw line: t:%f, r:%f => (%d, %d) - (%d, %d)\n", _theta, _rho, x1, y1, x2, y2);
+    printf("draw line: t:%f, r:%f => (%d, %d) - (%d, %d)\n", _theta, _rho, x1, y1, x2, y2);
     draw_line(_pImg, 0xFF00FF, x1, y1, x2, y2);
 }
 

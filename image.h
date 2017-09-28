@@ -25,6 +25,7 @@ void copy_image(SImage *_pImg, SImage *_pCopy);
 SImage convertToGray(const SImage _source);
 SImage convertToARGB(const SImage _source);
 void dump(const SImage _source);
+void dump_data(const uint8*_pData, const uint32 _width, const uint32 _height, const uint32 _bpp);
 void draw_line(SImage *_pImage, uint32 color, int x0, int y0, int x1, int y1);
 
 #endif
