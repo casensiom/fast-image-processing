@@ -42,9 +42,10 @@ main(int argc, char *argv[])
         for(i =0; i < foundLines; ++i)
         {
             draw(&imgRGB, lineBuffer[i].theta, lineBuffer[i].rho);
-            draw2(&imgRGB, lineBuffer[i].theta, lineBuffer[i].rho);
+            //draw2(&imgRGB, lineBuffer[i].theta, lineBuffer[i].rho);
         }
-        draw_line(&imgRGB, 0xFF0000, 0, 0, imgRGB.mWidth, imgRGB.mHeight);
+        //draw_line(&imgRGB, 0xFF0000, 0, 0, imgRGB.mWidth, imgRGB.mHeight);
+        draw_line(&imgRGB, 0xFF00FF00, imgRGB.mWidth/2, 0, imgRGB.mWidth/2, imgRGB.mHeight);
         save_image("out_hough.bmp", &imgRGB);
 #else
         uint64 currentTime;
@@ -161,9 +162,21 @@ void draw(SImage *_pImg, float _theta, float _rho)
     double      b = sin(_theta);
     double      x0 = a * _rho;
     double      y0 = b * _rho;
-    double      x = x0 - b;
-    double      y = y0 + a;
+    double      x = x0 - b; // (cos(_theta) * _rho) - sin(_theta)
+    double      y = y0 + a; // (sin(_theta) * _rho) + cos(_theta)
 
+
+    double      m = (b != 0) ? (-a / b) : -a;
+    double      q = (b != 0) ? (_rho / b) : _rho;
+
+    // double      r = sqrt( x*x + y*y );
+    // double      t = inv_tan( y / x );
+
+    // y - y0 = (y0 + a) - y0 => a
+    // x - x0 = (x0 - b) - x0 => -b
+    // coefA = (y - y0) / (x - x0) => (a / -b)
+    // coefB = y0 - (coefA * x0) => (b * _rho) - ((a / -b) *  a * _rho)
+    // 
     double      coefA = ((x != x0) ? ((y - y0) / (x - x0)) : 0.0);
     double      coefB = y0 - (coefA * x0);
 
@@ -182,7 +195,65 @@ void draw(SImage *_pImg, float _theta, float _rho)
         y2 = (int)(coefA * x2 + coefB);
     }
 
-    printf("draw line: t:%f, r:%f => (%d, %d) - (%d, %d)\n", _theta, _rho, x1, y1, x2, y2);
-    draw_line(_pImg, 0xFF00FF, x1, y1, x2, y2);
+    //printf("draw line: t:%f, r:%f => px: (%f, %f) coef( %f, %f) (%d, %d) - (%d, %d)\n", _theta, _rho, x0, y0, coefA, coefB, x1, y1, x2, y2);
+    uint32 i = 0;
+    SCartesian p[4];
+    if(m == 0)
+    {
+        p[i].x = q;
+        p[i].y = 0;
+        ++i;
+        p[i].x = q;
+        p[i].y = w;
+        ++i;
+        printf("point left\n");
+    }
+    else 
+    {
+        int32 left_y   = (m * 0 + q);
+        int32 right_y  = (m * w + q);
+        int32 bottom_x = ((0 - q) / m);
+        int32 top_x    = ((h - q) / m);
+
+        printf("look for points\n");
+        if(left_y >= 0 && left_y < h)
+        {
+            printf("point left\n");
+            p[i].x = 0;
+            p[i].y = left_y;
+            ++i;
+        }
+        if(right_y >= 0 && right_y < h)
+        {
+            printf("point right\n");
+            p[i].x = w;
+            p[i].y = right_y;
+            ++i;
+        }
+        if(bottom_x >= 0 && bottom_x < w)
+        {
+            printf("point bottom\n");
+            p[i].x = bottom_x;
+            p[i].y = 0;
+            ++i;
+        }
+        if(top_x >= 0 && top_x < w)
+        {
+            printf("point top\n");
+            p[i].x = top_x;
+            p[i].y = h;
+            ++i;
+        }
+
+        if(i == 0)
+        {
+            printf("Ojo!!! los valores no cuadran!! leftY: %d rightY: %d topY: %d bottomY: %d\n",left_y,right_y,top_x,bottom_x);
+        }
+    }
+
+    printf("draw line: t:%f, r:%f => m: %f, q: %f => p: (%d, %d) - (%d, %d) \n", _theta, _rho, m, q, p[0].x, p[0].y, p[1].x, p[1].y);
+    draw_line(_pImg, 0xFF0000, p[0].x, p[0].y, p[1].x, p[1].y);
+
+    //draw_line(_pImg, 0xFF00FF, x1, y1, x2, y2);
 }
 

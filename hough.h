@@ -11,6 +11,11 @@ typedef struct SPolar
     float theta;
 } SPolar;
 
+typedef struct SCartesian
+{
+    int32 x;
+    int32 y;
+} SCartesian;
 
 void init_hough(const uint32 _width, const uint32 _height);
 void release_hough();

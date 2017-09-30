@@ -140,7 +140,8 @@ HoughLinesStandard(uint8 *_pData, uint32 _width, uint32 _height, uint32 _thresho
     {
         SPolar line;
         int32 idx  = _pWorkspace->pCandidates[i].index;
-        line.rho   = (float)(((float)idx / (float)_pWorkspace->accWidth) - accMaxR);
+        line.rho   = (float)(((float)idx / (float)_pWorkspace->accWidth));
+        //line.theta = (idx - ((int)line.rho * _pWorkspace->accWidth)) * DEG2RAD;
         line.theta = (float)((idx % _pWorkspace->accWidth) * DEG2RAD);
         _lineBuffer[i] = line;
         printf(" * Save line %d (r: %f, t: %f) = %d\n", idx, line.rho, line.theta, _pWorkspace->pCandidates[i].acc);
