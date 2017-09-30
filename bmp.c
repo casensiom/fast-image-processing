@@ -220,14 +220,16 @@ uint32 save_image(const char *filename, const SImage *_pImg)
             }
             else 
             {
-                int bpp = 3;
+                int bpp   = 3;
+                int extra = 0;
                 if(_pImg->mBpp == 4)
                 {
-                    bpp = 4;
+                    bpp   = 4;
+                    extra = 1;
                 }
-                red = _pImg->mpData[x*bpp + y * WIDTH*bpp + 2];
-                green = _pImg->mpData[x*bpp + y * WIDTH*bpp + 1];
-                blue = _pImg->mpData[x*bpp + y * WIDTH*bpp + 0];
+                red   = _pImg->mpData[x*bpp + y * WIDTH*bpp + extra + 0];
+                green = _pImg->mpData[x*bpp + y * WIDTH*bpp + extra + 1];
+                blue  = _pImg->mpData[x*bpp + y * WIDTH*bpp + extra + 2];
             }
 
           // Also, it's written in (b,g,r) format...
