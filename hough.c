@@ -100,6 +100,7 @@ HoughLinesStandard(uint8 *_pData, uint32 _width, uint32 _height, uint32 _thresho
     int32 centerX = _width / 2;
     int32 centerY = _height / 2;
     double accMaxR = _pWorkspace->accMaxR;
+    double accHeight = _pWorkspace->accHeight;
     uint8* pData = _pData;
 
     reset_workspace_hough(_pWorkspace);
@@ -145,7 +146,7 @@ HoughLinesStandard(uint8 *_pData, uint32 _width, uint32 _height, uint32 _thresho
     {
         SPolar line;
         int32 idx  = _pWorkspace->pCandidates[i].index;
-        line.rho   = (float)(((float)idx / (float)_pWorkspace->accWidth));
+        line.rho   = (float)(((float)idx / (float)_pWorkspace->accWidth) - (accHeight/2));
         //line.theta = (idx - ((int)line.rho * _pWorkspace->accWidth)) * DEG2RAD;
         line.theta = (float)((idx % _pWorkspace->accWidth) * DEG2RAD);
         _lineBuffer[i] = line;
@@ -196,15 +197,39 @@ uint8
 CheckMaximaLocal(uint32 *_pAccum, uint32 _index, uint32 _width, uint32 _height)
 {
     uint8 ret = 0;
-#define CHECK_MAXIMA_SIDES
+//#define CHECK_MAXIMA_SIDES
 #ifdef CHECK_MAXIMA_SIDES
-        ret = (_index > _width && _index < (_height -1)*_width && 
-                _pAccum[_index] >  _pAccum[_index - 1] && 
-                _pAccum[_index] >= _pAccum[_index + 1] &&
-                _pAccum[_index] >  _pAccum[_index - _width] && 
-                _pAccum[_index] >= _pAccum[_index + _width] ) ? 0 : 1;
-
+    ret = (_index > _width && _index < (_height -1)*_width && 
+            _pAccum[_index] >  _pAccum[_index - 1] && 
+            _pAccum[_index] >= _pAccum[_index + 1] &&
+            _pAccum[_index] >  _pAccum[_index - _width] && 
+            _pAccum[_index] >= _pAccum[_index + _width] ) ? 0 : 1;
 #else
+    uint32 local_max = _pAccum[_index];
+    uint32 max = local_max;
+    int32 size = 4;
+    int32 x = _index % _width;
+    int32 y = _index / _width;
+    uint32 minY = ((y - size) >= 0     ) ? (y - size) : 0;
+    uint32 maxY = ((y + size) < _height) ? (y + size) : _height;
+    uint32 minX = ((x - size) >= 0     ) ? (x - size) : 0;
+    uint32 maxX = ((x + size) < _width ) ? (x + size) : _width;
+    uint32 pos = minX + minY * _width;
+    uint32 w = maxX - minX;
+    ret = 0;
+    for(int32 ly = minY; ly < maxY; ++ly)
+    {
+        for(int32 lx = minX; lx < maxX; ++lx)
+        {
+            if( _pAccum[pos] > max )
+            {
+                ret = 1;
+                ly = lx = 5;
+            }
+            ++pos;
+        }
+        pos += _width - w;
+    }
 #endif
     return ret;
 }

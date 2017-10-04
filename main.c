@@ -10,6 +10,9 @@
 void draw2(SImage *_pImg, float _theta, float _rho);
 void draw(SImage *_pImg, float _theta, float _rho);
 
+#define IS_ZERO(x) (CHECK_EPSILON(x, 0.0001))
+#define CHECK_EPSILON(x, e) (fabs(x) <= e)
+
 int
 main(int argc, char *argv[])
 {
@@ -32,9 +35,8 @@ main(int argc, char *argv[])
         copy_image(&imgGray, &img);
         canny(img.mpData, img.mWidth, img.mHeight, 50, 125);
         save_image("out.bmp", &img);
-        uint32 foundLines = hough(img.mpData, img.mWidth, img.mHeight, 100, lineBuffer, maxLines);
+        uint32 foundLines = hough(img.mpData, img.mWidth, img.mHeight, 150, lineBuffer, maxLines);
         printf("%d lines found.\n", foundLines);
-
 
         save_hough_workspace("out_hough_workspace.bmp");
 
@@ -48,7 +50,7 @@ main(int argc, char *argv[])
             //draw2(&imgRGB, lineBuffer[i].theta, lineBuffer[i].rho);
         }
         //draw_line(&imgRGB, 0xFF0000, 0, 0, imgRGB.mWidth, imgRGB.mHeight);
-        draw_line(&imgRGB, 0xFF00FF00, imgRGB.mWidth/2, 0, imgRGB.mWidth/2, imgRGB.mHeight);
+        //draw_line(&imgRGB, 0xFF00FF00, imgRGB.mWidth/2, 0, imgRGB.mWidth/2, imgRGB.mHeight);
         save_image("out_hough.bmp", &imgRGB);
 #else
         uint64 currentTime;
@@ -169,83 +171,104 @@ void draw(SImage *_pImg, float _theta, float _rho)
     double      y = y0 + a; // (sin(_theta) * _rho) + cos(_theta)
 
 
-    double      m = (b != 0) ? (-a / b) : -a;
-    double      q = (b != 0) ? (_rho / b) : _rho;
+    double      m = (b != 0) ? (-a / b) : 0;
+    double      q = (b != 0) ? (_rho / b) : 0;
 
     // double      r = sqrt( x*x + y*y );
     // double      t = inv_tan( y / x );
 
+
+
+    // x1 = (int)(x0 + 1000*(-b));
+    // y1 = (int)(y0 + 1000*(a));
+    // x2 = (int)(x0 - 1000*(-b));
+    // y2 = (int)(y0 - 1000*(a));
+
+
     // y - y0 = (y0 + a) - y0 => a
     // x - x0 = (x0 - b) - x0 => -b
-    // coefA = (y - y0) / (x - x0) => (a / -b)
+    // coefA = (y - y0) / (x - x0) => (a / -b) => m
+    // _r / b
     // coefB = y0 - (coefA * x0) => (b * _rho) - ((a / -b) *  a * _rho)
     // 
     double      coefA = ((x != x0) ? ((y - y0) / (x - x0)) : 0.0);
     double      coefB = y0 - (coefA * x0);
 
-    if (fabs(b) < 0.5)
+    if (fabs(b) < (M_PI / 4))
     {//vertical line : from y = 0 to y = frameSize.height
         y1 = 0;
-        x1 = coefA != 0.0 ? (int)(-coefB / coefA) : (int)x0;
+        x1 = (coefA != 0.0 ? (int)(-coefB / coefA) : (int)x0) ;
         y2 = h;
-        x2 = coefA != 0.0 ? (int)((y2 - coefB) / coefA) : (int)x0;
+        x2 = (coefA != 0.0 ? (int)((y2 - coefB) / coefA) : (int)x0)  ;
     }
     else
     {//horizontal line : from x = 0 to x = frameSize.width
         x1 = 0;
         y1 = (int)coefB;
         x2 = w;
-        y2 = (int)(coefA * x2 + coefB);
+        y2 = (int)(coefA * x2 + coefB) ;
     }
 
-    printf("draw line: t:%f (%fº), r:%f \n", _theta, _theta * RAD2DEG, _rho);
-    printf("px: (%f, %f) coef( %f, %f) line: (%d, %d) - (%d, %d)\n", x0, y0, coefA, coefB, x1, y1, x2, y2);
-    
+
+    //--
     uint32 i = 0;
     SCartesian p[4];
-    if(m == 0)
+    p[0].x = 0;
+    p[0].y = 0;
+    p[1].x = 0;
+    p[1].y = 0;
+    if(IS_ZERO(m))
     {
-        p[i].x = q;
-        p[i].y = 0;
-        ++i;
-        p[i].x = q;
-        p[i].y = w;
-        ++i;
-    }
-    else 
-    {
-        int32 left_y   = (m * 0 + q);
-        int32 right_y  = (m * w + q);
-        int32 bottom_x = ((0 - q) / m);
-        int32 top_x    = ((h - q) / m);
-
-        if(left_y >= 0 && left_y < h)
+        if (fabs(b) < (M_PI / 4))
         {
-            p[i].x = 0;
-            p[i].y = left_y;
-            ++i;
-        }
-        if(right_y >= 0 && right_y < h)
-        {
-            p[i].x = w;
-            p[i].y = right_y;
-            ++i;
-        }
-        if(bottom_x >= 0 && bottom_x < w)
-        {
-            p[i].x = bottom_x;
+            p[i].x = x0 + w/2;
             p[i].y = 0;
             ++i;
-        }
-        if(top_x >= 0 && top_x < w)
-        {
-            p[i].x = top_x;
+            p[i].x = x0 + w/2;
             p[i].y = h;
             ++i;
         }
+        else
+        {
+            p[i].x = 0;
+            p[i].y = y0 + h/2;
+            ++i;
+            p[i].x = w;
+            p[i].y = y0 + h/2;
+            ++i;
+        }
+    }
+    else 
+    {
+        //  http://www.keymolen.com/2013/05/hough-transformation-c-implementation.html
+        i = 0;
+        if(_theta >= (M_PI/4) && _theta <= (3*M_PI/4))
+        {
+            //y = (r - x cos(t)) / sin(t)  
+            p[i].x = 0;
+            p[i].y = (_rho + ((w/2) * a)) / b + (h/2);
+            ++i;
+            p[i].x = w - 0;
+            p[i].y = (_rho - ((w/2) * a)) / b + (h/2);
+            ++i;
+        }
+        else
+        {
+            //x = (r - y sin(t)) / cos(t);  
+            p[i].y = 0;
+            p[i].x = (_rho + ((h/2) * b)) / a + (w/2);
+            ++i;
+            p[i].y = h - 0;
+            p[i].x = (_rho - ((h/2) * b)) / a + (w/2);
+            ++i;
+        }  
     }
 
-    printf("m: %f, q: %f => p: (%d, %d) - (%d, %d) \n", m, q, p[0].x, p[0].y, p[1].x, p[1].y);
+
+    printf("draw line: t:%f (%.02fº), r:%.02f  --> coef( %f, %f) (m: %f, q: %f) px: (%f, %f)\n", _theta, _theta * RAD2DEG, _rho, coefA, coefB, m, q, x0, y0);
+    printf("     line: (%03d, %03d) - (%03d, %03d)\n", x1, y1, x2, y2);
+    printf("     line: (%03d, %03d) - (%03d, %03d) \n", p[0].x, p[0].y, p[1].x, p[1].y);
+    //draw_line(_pImg, 0xFF0000, x1, y1, x2, y2);
     draw_line(_pImg, 0xFF0000, p[0].x, p[0].y, p[1].x, p[1].y);
 
     //draw_line(_pImg, 0xFF00FF, x1, y1, x2, y2);
