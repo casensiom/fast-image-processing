@@ -21,4 +21,6 @@ void init_hough(const uint32 _width, const uint32 _height);
 void release_hough();
 uint32 hough(uint8 *_pData, uint32 _width, uint32 _height, uint32 _threshold, SPolar *_lineBuffer, uint32 _size);
 
+void save_hough_workspace(const char *filename);
+
 #endif

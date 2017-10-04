@@ -132,15 +132,21 @@ uint32 load_image(const char *filename, SImage *pImage)
 
 uint32 save_image(const char *filename, const SImage *_pImg)
 {
+    return save_image_ex(filename, _pImg->mpData, _pImg->mWidth, _pImg->mHeight, _pImg->mBpp);
+}
 
+uint32 save_image_ex(const char *filename, const uint8 *_pData, uint32 _w, uint32 _h, uint32 _bpp)
+{
     unsigned int headers[13];
     FILE * outfile;
     int extrabytes;
     int paddedsize;
-    int x; int y; int n;
+    int x; 
+    int y; 
+    int n;
     int red, green, blue;
-    int WIDTH = _pImg->mWidth;
-    int HEIGHT = _pImg->mHeight;
+    int WIDTH = _w;
+    int HEIGHT = _h;
 
     extrabytes = 4 - ((WIDTH * 3) % 4);                 // How many bytes of padding to add to each
                                                         // horizontal line - the size of which must
@@ -212,24 +218,24 @@ uint32 save_image(const char *filename, const SImage *_pImg)
     {
        for (x = 0; x < WIDTH; x++)
        {
-            if(_pImg->mBpp == 1)
+            if(_bpp == 1)
             {
-                red = _pImg->mpData[x + y * WIDTH];
-                green = _pImg->mpData[x + y * WIDTH];
-                blue = _pImg->mpData[x + y * WIDTH];
+                red   = _pData[x + y * WIDTH];
+                green = _pData[x + y * WIDTH];
+                blue  = _pData[x + y * WIDTH];
             }
             else 
             {
                 int bpp   = 3;
                 int extra = 0;
-                if(_pImg->mBpp == 4)
+                if(_bpp == 4)
                 {
                     bpp   = 4;
                     extra = 1;
                 }
-                red   = _pImg->mpData[x*bpp + y * WIDTH*bpp + extra + 0];
-                green = _pImg->mpData[x*bpp + y * WIDTH*bpp + extra + 1];
-                blue  = _pImg->mpData[x*bpp + y * WIDTH*bpp + extra + 2];
+                red   = _pData[x*bpp + y * WIDTH*bpp + extra + 0];
+                green = _pData[x*bpp + y * WIDTH*bpp + extra + 1];
+                blue  = _pData[x*bpp + y * WIDTH*bpp + extra + 2];
             }
 
           // Also, it's written in (b,g,r) format...

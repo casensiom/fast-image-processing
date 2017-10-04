@@ -15,7 +15,7 @@ main(int argc, char *argv[])
 {
     const char *fileIn = "in.bmp";
 
-    const uint32 maxLines = 16;
+    const uint32 maxLines = 128;
     SPolar lineBuffer[maxLines];
 
     SImage imgRGB, imgGray, img;
@@ -32,10 +32,13 @@ main(int argc, char *argv[])
         copy_image(&imgGray, &img);
         canny(img.mpData, img.mWidth, img.mHeight, 50, 125);
         save_image("out.bmp", &img);
-        uint32 foundLines = hough(img.mpData, img.mWidth, img.mHeight, 14, lineBuffer, maxLines);
+        uint32 foundLines = hough(img.mpData, img.mWidth, img.mHeight, 100, lineBuffer, maxLines);
         printf("%d lines found.\n", foundLines);
 
 
+        save_hough_workspace("out_hough_workspace.bmp");
+
+        printf("print lines.\n");
         release_image(&imgRGB);
         imgRGB = convertToARGB(img);
         uint32 i;
@@ -195,7 +198,9 @@ void draw(SImage *_pImg, float _theta, float _rho)
         y2 = (int)(coefA * x2 + coefB);
     }
 
-    //printf("draw line: t:%f, r:%f => px: (%f, %f) coef( %f, %f) (%d, %d) - (%d, %d)\n", _theta, _rho, x0, y0, coefA, coefB, x1, y1, x2, y2);
+    printf("draw line: t:%f (%fº), r:%f \n", _theta, _theta * RAD2DEG, _rho);
+    printf("px: (%f, %f) coef( %f, %f) line: (%d, %d) - (%d, %d)\n", x0, y0, coefA, coefB, x1, y1, x2, y2);
+    
     uint32 i = 0;
     SCartesian p[4];
     if(m == 0)
@@ -206,7 +211,6 @@ void draw(SImage *_pImg, float _theta, float _rho)
         p[i].x = q;
         p[i].y = w;
         ++i;
-        printf("point left\n");
     }
     else 
     {
@@ -215,43 +219,33 @@ void draw(SImage *_pImg, float _theta, float _rho)
         int32 bottom_x = ((0 - q) / m);
         int32 top_x    = ((h - q) / m);
 
-        printf("look for points\n");
         if(left_y >= 0 && left_y < h)
         {
-            printf("point left\n");
             p[i].x = 0;
             p[i].y = left_y;
             ++i;
         }
         if(right_y >= 0 && right_y < h)
         {
-            printf("point right\n");
             p[i].x = w;
             p[i].y = right_y;
             ++i;
         }
         if(bottom_x >= 0 && bottom_x < w)
         {
-            printf("point bottom\n");
             p[i].x = bottom_x;
             p[i].y = 0;
             ++i;
         }
         if(top_x >= 0 && top_x < w)
         {
-            printf("point top\n");
             p[i].x = top_x;
             p[i].y = h;
             ++i;
         }
-
-        if(i == 0)
-        {
-            printf("Ojo!!! los valores no cuadran!! leftY: %d rightY: %d topY: %d bottomY: %d\n",left_y,right_y,top_x,bottom_x);
-        }
     }
 
-    printf("draw line: t:%f, r:%f => m: %f, q: %f => p: (%d, %d) - (%d, %d) \n", _theta, _rho, m, q, p[0].x, p[0].y, p[1].x, p[1].y);
+    printf("m: %f, q: %f => p: (%d, %d) - (%d, %d) \n", m, q, p[0].x, p[0].y, p[1].x, p[1].y);
     draw_line(_pImg, 0xFF0000, p[0].x, p[0].y, p[1].x, p[1].y);
 
     //draw_line(_pImg, 0xFF00FF, x1, y1, x2, y2);

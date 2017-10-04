@@ -1,4 +1,6 @@
 #include "hough.h"
+#include "image.h"
+#include "bmp.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -89,7 +91,8 @@ uint32
 HoughLinesStandard(uint8 *_pData, uint32 _width, uint32 _height, uint32 _threshold, 
                     SPolar *_lineBuffer, uint32 _size, SHoughWorkspace *_pWorkspace)
 {
-    int32 x, y, r, t;
+    int32 x, y;
+    uint32 r, t;
 
     uint32 *pAccum = _pWorkspace->pAccum;
     float *pSin = _pWorkspace->pSin;
@@ -108,11 +111,13 @@ HoughLinesStandard(uint8 *_pData, uint32 _width, uint32 _height, uint32 _thresho
         {
             if( *_pData > 0 )
             {
+                double posX = (double)(x - centerX);
+                double posY = (double)(y - centerY);
                 //printf(" - pixel white\n");
                 for(t = 0; t < _pWorkspace->accWidth; ++t )
                 {
-                    double r = ((double)(x - centerX) * pCos[t]) + ((double)(y - centerY) * pSin[t]) + accMaxR;  
-                    pAccum[(int)((r * (double)_pWorkspace->accWidth) + 0.5) + t]++; 
+                    r = (uint32)((posX * pCos[t]) + (posY * pSin[t]) + accMaxR + 0.5f);  
+                    pAccum[(r * _pWorkspace->accWidth) + t]++; 
                 }
             }
             ++_pData;
@@ -148,6 +153,42 @@ HoughLinesStandard(uint8 *_pData, uint32 _width, uint32 _height, uint32 _thresho
     }
 
     return linesMax;
+}
+
+
+void
+save_hough_workspace(const char *filename)
+{
+
+    int32 x, y;
+    int32 max;
+
+    uint32 *pAccum = spHoughWorkspace->pAccum;
+    uint32 w = spHoughWorkspace->accWidth;
+    uint32 h = spHoughWorkspace->accHeight;
+
+    max = 0;
+    for(y = 0; y < h; ++y )
+    {
+        for(x = 0; x < w; ++x )
+        {
+            uint32 base = (y * w) + x;
+            if(pAccum[base] > max)
+                max = pAccum[base];
+        }
+    }
+
+    SImage img = create_image(w, h, 1);
+    for(y = 0; y < h; ++y )
+    {
+        for(x = 0; x < w; ++x )
+        {
+            uint32 base = (y * w) + x;
+            img.mpData[base] = (uint8)(((float)pAccum[base] / (float)max ) * 255);
+        }
+    }
+    save_image(filename, &img);
+    release_image(&img);
 }
 
 //-------------------------------------
@@ -223,9 +264,9 @@ create_workspace_hough(const uint32 _width, const uint32 _height)
 
     printf("Creating hough workpace with: width: %d, height: %d, accMaxR: %f, maxR: %d, maxT: %d\n", _width, _height, work->accMaxR, work->accHeight, work->accWidth);
 
-    work->pSin = (float *)malloc(180 * sizeof(float));
-    work->pCos = (float *)malloc(180 * sizeof(float));
-    for(int n = 0; n < 180; ++n)
+    work->pSin = (float *)malloc(work->accWidth * sizeof(float));
+    work->pCos = (float *)malloc(work->accWidth * sizeof(float));
+    for(int n = 0; n < work->accWidth; ++n)
     {
         work->pSin[n] = (float)(sin((double)n * DEG2RAD));
         work->pCos[n] = (float)(cos((double)n * DEG2RAD));

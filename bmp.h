@@ -14,5 +14,6 @@ typedef enum ELoadError
 
 uint32 load_image(const char *filename, SImage *pImage);
 uint32 save_image(const char *filename, const SImage *_pImg);
+uint32 save_image_ex(const char *filename, const uint8 *_pData, uint32 _w, uint32 _h, uint32 _bpp);
 
 #endif
