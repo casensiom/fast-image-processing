@@ -4,8 +4,10 @@
 #include "bmp.h"
 #include "timer.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
 #include <math.h>
+#include <string.h>
 
 void draw2(SImage *_pImg, float _theta, float _rho);
 void draw(SImage *_pImg, float _theta, float _rho);
@@ -13,12 +15,114 @@ void draw(SImage *_pImg, float _theta, float _rho);
 #define IS_ZERO(x) (CHECK_EPSILON(x, 0.0001))
 #define CHECK_EPSILON(x, e) (fabs(x) <= e)
 
+
+char *input_filename = "in.bmp";
+int hough_threshold = 150;
+int canny_min_threshold = 50;
+int canny_max_threshold = 125;
+int apply_canny = 1;
+int max_lines = 16;
+int verbose = 0;
+
+#define STR_CANNY_DISABLE "--disable_canny"
+#define STR_VERBOSE "--verbose"
+
+#define STR_HOUGH_THRESHOLD "-hough"
+#define STR_CANNY_MIN_THRESHOLD "-canny_min"
+#define STR_CANNY_MAX_THRESHOLD "-canny_max"
+#define STR_MAX_LINES "-lines"
+#define STR_INPUT_FILENAME "-input"
+
+int
+get_args(int argc, char *argv[])
+{
+    int ret = 0;
+    for(int i = 1; i < argc; ++i)
+    {
+        if(strcmp(argv[i], STR_CANNY_DISABLE) == 0)
+        {
+            apply_canny = 0;
+        }
+        else if(strcmp(argv[i], STR_HOUGH_THRESHOLD) == 0)
+        {
+            ++i;
+            hough_threshold = atoi(argv[i]);
+        }
+        else if(strcmp(argv[i], STR_CANNY_MIN_THRESHOLD) == 0)
+        {
+            ++i;
+            canny_min_threshold = atoi(argv[i]);
+        }
+        else if(strcmp(argv[i], STR_CANNY_MAX_THRESHOLD) == 0)
+        {
+            ++i;
+            canny_max_threshold = atoi(argv[i]);
+        }
+        else if(strcmp(argv[i], STR_MAX_LINES) == 0)
+        {
+            ++i;
+            max_lines = atoi(argv[i]);
+        }
+        else if(strcmp(argv[i], STR_INPUT_FILENAME) == 0)
+        {
+            ++i;
+            input_filename = argv[i];
+        }
+        else if(strcmp(argv[i], STR_VERBOSE) == 0)
+        {
+            verbose = 1;
+        }
+        else if(strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "-?") == 0 || strcmp(argv[i], "/h") == 0)
+        {
+            ret = 1;
+        }
+    }
+    return ret;
+}
+
+void
+print_help()
+{
+    printf("\n");
+    printf("You can set any of these properties, set the property name followed by the parameter value:\n");
+    printf("  '%s'\t\tnumber   (default is 150) [indicates the value for hough threshold, thats the number of points to define a line]\n", STR_HOUGH_THRESHOLD);
+    printf("  '%s'\t\tnumber   (default is 50)  [indicates the min threshold for canny filter]\n", STR_CANNY_MIN_THRESHOLD);
+    printf("  '%s'\t\tnumber   (default is 125) [indicates the max threshold for canny filter]\n", STR_CANNY_MAX_THRESHOLD);
+    printf("  '%s'\t\tnumber   (default is 16)  [indicates the maximun number of lines to store]\n", STR_MAX_LINES);
+    printf("  '%s'\t\tfilename (default is 'in.bmp') [indicates the filename of the input image]\n", STR_INPUT_FILENAME);
+    printf("\n");
+    printf("You can set any of these flags:\n");
+    printf("  '%s'\t[indicates it MUST NOT apply canny to the input image]\n", STR_CANNY_DISABLE);
+    printf("  '%s'\t\t[indicates it MUST dump info messages]\n", STR_VERBOSE);
+    printf("\n");
+}
+
 int
 main(int argc, char *argv[])
 {
-    const char *fileIn = "in.bmp";
+    if(get_args(argc, argv))
+    {
+        print_help();
+        return 0;
+    }
 
-    const uint32 maxLines = 128;
+    //if(verbose == 1)
+    {
+        printf("Current properties:\n");
+        printf("    %s\t %s\n", STR_INPUT_FILENAME, input_filename);
+        printf("    %s\t %d\n", STR_HOUGH_THRESHOLD, hough_threshold);
+        printf("    %s\t %d\n", STR_CANNY_MIN_THRESHOLD, canny_min_threshold);
+        printf("    %s\t %d\n", STR_CANNY_MAX_THRESHOLD, canny_max_threshold);
+        printf("    %s\t %d\n", STR_MAX_LINES, max_lines);
+        if(apply_canny == 0)
+            printf("    %s\n", STR_CANNY_DISABLE);
+        if(verbose == 1)
+            printf("    %s\n", STR_VERBOSE);
+    }
+
+    //const char *fileIn = input_filename;
+
+    const uint32 maxLines = max_lines;
     SPolar lineBuffer[maxLines];
 
     SImage imgRGB, imgGray, img;
@@ -27,20 +131,25 @@ main(int argc, char *argv[])
     reset_image(&imgGray);
     reset_image(&img);
 
-    ELoadError error = load_image(fileIn, &imgRGB);
+    ELoadError error = load_image(input_filename, &imgRGB);
     if(error == LE_NO_ERROR)
     {
         imgGray = convertToGray(imgRGB);
 #if 1
         copy_image(&imgGray, &img);
-        canny(img.mpData, img.mWidth, img.mHeight, 50, 125);
+        if(apply_canny == 1)
+            canny(img.mpData, img.mWidth, img.mHeight, canny_min_threshold, canny_max_threshold);
         save_image("out.bmp", &img);
-        uint32 foundLines = hough(img.mpData, img.mWidth, img.mHeight, 150, lineBuffer, maxLines);
-        printf("%d lines found.\n", foundLines);
+        uint32 foundLines = hough(img.mpData, img.mWidth, img.mHeight, hough_threshold, lineBuffer, maxLines);
 
         save_hough_workspace("out_hough_workspace.bmp");
 
-        printf("print lines.\n");
+
+        if(verbose == 1)
+        {
+            printf("%d lines found.\n", foundLines);
+            printf("print lines.\n");
+        }
         release_image(&imgRGB);
         imgRGB = convertToARGB(img);
         uint32 i;
@@ -116,7 +225,7 @@ main(int argc, char *argv[])
             pError = "INVALID_MAGIC";
             break;
         }
-        printf("Error '%s' while opening '%s'\n", pError, fileIn);
+        printf("Error '%s' while opening '%s'\n", pError, input_filename);
     }
 
     release_image(&imgRGB);
@@ -264,10 +373,12 @@ void draw(SImage *_pImg, float _theta, float _rho)
         }  
     }
 
-
-    printf("draw line: t:%f (%.02fº), r:%.02f  --> coef( %f, %f) (m: %f, q: %f) px: (%f, %f)\n", _theta, _theta * RAD2DEG, _rho, coefA, coefB, m, q, x0, y0);
-    printf("     line: (%03d, %03d) - (%03d, %03d)\n", x1, y1, x2, y2);
-    printf("     line: (%03d, %03d) - (%03d, %03d) \n", p[0].x, p[0].y, p[1].x, p[1].y);
+    if(verbose == 1)
+    {
+        printf("draw line: t:%f (%.02fº), r:%.02f  --> coef( %f, %f) (m: %f, q: %f) px: (%f, %f)\n", _theta, _theta * RAD2DEG, _rho, coefA, coefB, m, q, x0, y0);
+        printf("     line: (%03d, %03d) - (%03d, %03d)\n", x1, y1, x2, y2);
+        printf("     line: (%03d, %03d) - (%03d, %03d) \n", p[0].x, p[0].y, p[1].x, p[1].y);
+    }
     //draw_line(_pImg, 0xFF0000, x1, y1, x2, y2);
     draw_line(_pImg, 0xFF0000, p[0].x, p[0].y, p[1].x, p[1].y);
 
