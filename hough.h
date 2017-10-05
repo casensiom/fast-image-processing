@@ -4,6 +4,7 @@
 #include "types.h"
 
 // https://github.com/opencv/opencv/blob/master/modules/imgproc/src/hough.cpp
+// http://www.keymolen.com/2013/05/hough-transformation-c-implementation.html
 
 typedef struct SPolar
 {
