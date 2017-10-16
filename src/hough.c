@@ -224,7 +224,8 @@ CheckMaximaLocal(uint32 *_pAccum, uint32 _index, uint32 _width, uint32 _height)
             if( _pAccum[pos] > max )
             {
                 ret = 1;
-                ly = lx = 5;
+                ly = maxY;
+                lx = maxX;
             }
             ++pos;
         }
