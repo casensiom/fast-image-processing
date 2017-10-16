@@ -132,6 +132,21 @@ main(int argc, char *argv[])
     reset_image(&img);
 
     ELoadError error = load_image(input_filename, &imgRGB);
+    if(error != LE_NO_ERROR)
+    {
+        uint32 side = 350;
+        imgRGB = create_image(side, side, PF_GRAY);
+        for(uint32 y = 0; y < side; ++y)
+        {
+            for(uint32 x = 0; x < side; ++x)
+            {
+                imgRGB.mpData[x+y*side] = (x % 255) ^ (y % 255);
+            }
+        }
+        save_image(input_filename, &imgRGB);
+        error = LE_NO_ERROR;    
+    }
+
     if(error == LE_NO_ERROR)
     {
         imgGray = convertToGray(imgRGB);
@@ -145,7 +160,7 @@ main(int argc, char *argv[])
         save_hough_workspace("out_hough_workspace.bmp");
 
 
-        if(verbose == 1)
+        //if(verbose == 1)
         {
             printf("%d lines found.\n", foundLines);
             printf("print lines.\n");
