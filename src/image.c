@@ -65,14 +65,14 @@ SImage convertToGray(const SImage _source)
     uint8 *pData = (uint8 *)_source.mpData;
 
     uint32 i, size = _source.mWidth * _source.mHeight;
-    uint8 r, g, b;
+    //uint8 r, g, b;
     reset_image(&pDst);
     pDst = create_image(_source.mWidth, _source.mHeight, PF_GRAY);
     if(_source.mBpp == PF_GRAY)
     {
         memcpy(pDst.mpData, pData, size);
     }
-    else 
+    else
     {
         if(_source.mBpp == PF_ARGB)
         {
@@ -81,7 +81,7 @@ SImage convertToGray(const SImage _source)
                 uint8 b = pData[0];
                 uint8 g = pData[1];
                 uint8 r = pData[2];
-                uint8 a = pData[3];
+                //uint8 a = pData[3];
                 pDst.mpData[i] = (0.298f * (float)r + 0.586f * (float)g + 0.114f * (float)b);
                 pData += 4;
             }
@@ -97,7 +97,7 @@ SImage convertToGray(const SImage _source)
                 pData += 3;
             }
         }
-        else 
+        else
         {
             // ERROR !!!!
         }
@@ -126,7 +126,7 @@ SImage convertToARGB(const SImage _source)
             ++pData;
         }
     }
-    else 
+    else
     {
         if(_source.mBpp == PF_ARGB)
         {
@@ -144,7 +144,7 @@ SImage convertToARGB(const SImage _source)
                 ++pData;
             }
         }
-        else 
+        else
         {
             // ERROR !!!!
         }

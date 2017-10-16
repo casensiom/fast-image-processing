@@ -10,13 +10,13 @@ uint8 applyConvolution(uint8 *_pData, uint32 _width, uint32 _height, uint32 _x, 
 uint8 decodeSegment(uint32 x, uint32 y);
 
 //-------------------------------------
-void getGradientsAndDirections(uint8 *_pData, uint32 _width, uint32 _height, double *_pGradient, uint8 *_pDirection) 
+void getGradientsAndDirections(uint8 *_pData, uint32 _width, uint32 _height, double *_pGradient, uint8 *_pDirection)
 {
 
     const int32 Gx[] = {-1, 0, 1,
                         -2, 0, 2,
                         -1, 0, 1};
- 
+
     const int32 Gy[] = { 1, 2, 1,
                          0, 0, 0,
                         -1,-2,-1};
@@ -24,7 +24,7 @@ void getGradientsAndDirections(uint8 *_pData, uint32 _width, uint32 _height, dou
     // apply sobel kernels and store gradients and directions
     int kernel_size = 3;
     int kernel_half = kernel_size >> 1;
-    int leap = kernel_size - 1;
+    //int leap = kernel_size - 1;
     int offset_xy = kernel_half;  // 3x3
     int src_pos = offset_xy + (offset_xy * _width);
 
@@ -34,9 +34,9 @@ void getGradientsAndDirections(uint8 *_pData, uint32 _width, uint32 _height, dou
     for(i = 0; i < size; ++i)
     {
 #else
-    for (int y = offset_xy; y < _height - offset_xy; ++y) 
+    for (int y = offset_xy; y < _height - offset_xy; ++y)
     {
-        for (int x = offset_xy; x < _width - offset_xy; ++x) 
+        for (int x = offset_xy; x < _width - offset_xy; ++x)
         {
 #endif
             int32 convolve_X = 0.0;
@@ -73,7 +73,7 @@ void computeLocalMaxima(uint32 _width, uint32 _height, double *_pGradient, uint8
     // delete the points where de direcction and gradients does not fit
     int kernel_size = 3;
     int kernel_half = kernel_size >> 1;
-    int leap = kernel_size - 1;
+    //int leap = kernel_size - 1;
     int offset_xy = kernel_half;  // 3x3
     int pos = offset_xy + (offset_xy * _width);
 
@@ -95,9 +95,9 @@ void computeLocalMaxima(uint32 _width, uint32 _height, double *_pGradient, uint8
     {
 #else
 
-    for (int y = offset_xy; y < _height - offset_xy; ++y) 
+    for (int y = offset_xy; y < _height - offset_xy; ++y)
     {
-    for (int x = offset_xy; x < _width - offset_xy; ++x) 
+    for (int x = offset_xy; x < _width - offset_xy; ++x)
     {
 #endif
         if ((*pDir == 0 ) ||
@@ -124,12 +124,12 @@ void computeLocalMaxima(uint32 _width, uint32 _height, double *_pGradient, uint8
 
 //-------------------------------------
 uint8 applyGaussianBlur(uint8 *_pIn, uint8 *_pOut, uint32 _width, uint32 _height, uint32 _kernel_size)
-{    
+{
 
     const uint32 Gaus3x3Sum = 16;
-    const uint8  Gaus3x3[] = { 1, 2, 1,    
-                               2, 4, 2,   // * 1/16  
-                               1, 2, 1}; 
+    const uint8  Gaus3x3[] = { 1, 2, 1,
+                               2, 4, 2,   // * 1/16
+                               1, 2, 1};
 
 
     const uint32 Gaus5x5Sum = 159;
@@ -139,7 +139,7 @@ uint8 applyGaussianBlur(uint8 *_pIn, uint8 *_pOut, uint32 _width, uint32 _height
                                 4,  9, 12,  9, 4,
                                 2,  4,  5,  4, 2 };
 
-    uint8 *pSrc = _pIn;
+    //uint8 *pSrc = _pIn;
     uint8 *pDst = _pOut;
     uint32 px;
     uint32 py;
@@ -229,7 +229,7 @@ uint8 applyGaussianBlur(uint8 *_pIn, uint8 *_pOut, uint32 _width, uint32 _height
 
 
 //-------------------------------------
-uint8 applyConvolution(uint8 *_pData, uint32 _width, uint32 _height, uint32 _x, uint32 _y, uint8 *_pKernel, uint8 _kernel_size, uint32 _kernel_sum) 
+uint8 applyConvolution(uint8 *_pData, uint32 _width, uint32 _height, uint32 _x, uint32 _y, uint8 *_pKernel, uint8 _kernel_size, uint32 _kernel_sum)
 {
 
     // these security checks can be avoid if we only call this method from our GaussianBlur method
@@ -267,7 +267,7 @@ uint8 decodeSegment(uint32 x, uint32 y)
 
     uint8 segment = 0;
 
-    if (x != 0.0 && y != 0.0) 
+    if (x != 0.0 && y != 0.0)
     {
         double theta = atan2(x, y);  // radians. atan2 range: -PI,+PI,
                                       // theta : 0 - 2PI

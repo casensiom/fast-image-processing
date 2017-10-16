@@ -104,17 +104,17 @@ traceEdgesWithHysteresis(uint8 *_pData, const uint32 _width, const uint32 _heigh
     {
         for (int i = 1; i < _width - 1; ++i)
         {
-            if (pMax[c] >= _tmax && pData[c] == 0) 
+            if (pMax[c] >= _tmax && pData[c] == 0)
             { // trace edges
                 pData[c] = MAX_BRIGHTNESS;
                 int nedges = 1;
                 edges[0] = c;
- 
+
                 do
                 {
                     nedges--;
                     const int t = edges[nedges];
- 
+
                     int nbs[8]; // neighbours
                     nbs[0] = t - _width;     // nn
                     nbs[1] = t + _width;     // ss
@@ -124,10 +124,10 @@ traceEdgesWithHysteresis(uint8 *_pData, const uint32 _width, const uint32 _heigh
                     nbs[5] = nbs[0] - 1; // ne
                     nbs[6] = nbs[1] + 1; // sw
                     nbs[7] = nbs[1] - 1; // se
- 
+
                     for (int k = 0; k < 8; k++)
                     {
-                        if (pMax[nbs[k]] >= _tmin && pData[nbs[k]] == 0) 
+                        if (pMax[nbs[k]] >= _tmin && pData[nbs[k]] == 0)
                         {
                             pData[nbs[k]] = MAX_BRIGHTNESS;
                             edges[nedges] = nbs[k];
@@ -141,12 +141,12 @@ traceEdgesWithHysteresis(uint8 *_pData, const uint32 _width, const uint32 _heigh
         c += 2;
     }
 #else
-    uint32 x, y;
+    //uint32 x, y;
 
     // Reuse array as a stack. width*height/2 elements should be enough.
     uint32 numPoints = 0;
     uint32 *pPoints = (uint32 *)_pWorkspace->pGradient;
-    
+
     // Mark double threshold _tmin and _tmax
     uint8 *pData = _pData;
     double *pMax = _pWorkspace->pMaxima;
@@ -157,7 +157,7 @@ traceEdgesWithHysteresis(uint8 *_pData, const uint32 _width, const uint32 _heigh
         {
             *pData = MAX_BRIGHTNESS;
         }
-        else if (*pMax > _tmin) 
+        else if (*pMax > _tmin)
         {
             if(i > (_width + 1) && i < (size - _width - 1))
             {
@@ -165,12 +165,12 @@ traceEdgesWithHysteresis(uint8 *_pData, const uint32 _width, const uint32 _heigh
                 pPoints[numPoints] = i;
                 ++numPoints;
             }
-            else 
+            else
             {
                 *pData = 0;
             }
         }
-        else 
+        else
         {
             *pData = 0;
         }
@@ -180,13 +180,13 @@ traceEdgesWithHysteresis(uint8 *_pData, const uint32 _width, const uint32 _heigh
 
     // 5. Refine edges with hysteresis
 
-    for (i = 0; i < numPoints; ++i) 
+    for (i = 0; i < numPoints; ++i)
     {
         pData = _pData + pPoints[i];
         if (*(pData - _width - 1) == MAX_BRIGHTNESS ||
             *(pData - _width) == MAX_BRIGHTNESS ||
-            *(pData - _width + 1) == MAX_BRIGHTNESS || 
-            *(pData - 1) == MAX_BRIGHTNESS || 
+            *(pData - _width + 1) == MAX_BRIGHTNESS ||
+            *(pData - 1) == MAX_BRIGHTNESS ||
             *(pData + 1) == MAX_BRIGHTNESS ||
             *(pData + _width - 1) == MAX_BRIGHTNESS ||
             *(pData + _width) == MAX_BRIGHTNESS ||
@@ -217,10 +217,10 @@ create_workspace_canny(const uint32 _width, const uint32 _height)
 }
 
 //-------------------------------------
-void 
+void
 release_workspace_canny(SCannyWorkspace *_pWorkspace)
 {
-    if(_pWorkspace != 0x0) 
+    if(_pWorkspace != 0x0)
     {
         _pWorkspace->width  = 0;
         _pWorkspace->height = 0;

@@ -7,7 +7,7 @@
 uint64 current_time_ms()
 {
     uint64          ms; // Milliseconds
-    time_t          s;  // Seconds
+    //time_t          s;  // Seconds
     struct timespec spec;
 
     clock_gettime(CLOCK_REALTIME, &spec);

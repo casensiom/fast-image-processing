@@ -88,7 +88,7 @@ hough(uint8 *_pData, uint32 _width, uint32 _height, uint32 _threshold, SPolar *_
 //
 //-------------------------------------
 uint32
-HoughLinesStandard(uint8 *_pData, uint32 _width, uint32 _height, uint32 _threshold, 
+HoughLinesStandard(uint8 *_pData, uint32 _width, uint32 _height, uint32 _threshold,
                     SPolar *_lineBuffer, uint32 _size, SHoughWorkspace *_pWorkspace)
 {
     int32 x, y;
@@ -101,7 +101,7 @@ HoughLinesStandard(uint8 *_pData, uint32 _width, uint32 _height, uint32 _thresho
     int32 centerY = _height / 2;
     double accMaxR = _pWorkspace->accMaxR;
     double accHeight = _pWorkspace->accHeight;
-    uint8* pData = _pData;
+    //uint8* pData = _pData;
 
     reset_workspace_hough(_pWorkspace);
 
@@ -117,8 +117,8 @@ HoughLinesStandard(uint8 *_pData, uint32 _width, uint32 _height, uint32 _thresho
                 //printf(" - pixel white\n");
                 for(t = 0; t < _pWorkspace->accWidth; ++t )
                 {
-                    r = (uint32)((posX * pCos[t]) + (posY * pSin[t]) + accMaxR + 0.5f);  
-                    pAccum[(r * _pWorkspace->accWidth) + t]++; 
+                    r = (uint32)((posX * pCos[t]) + (posY * pSin[t]) + accMaxR + 0.5f);
+                    pAccum[(r * _pWorkspace->accWidth) + t]++;
                 }
             }
             ++_pData;
@@ -199,10 +199,10 @@ CheckMaximaLocal(uint32 *_pAccum, uint32 _index, uint32 _width, uint32 _height)
     uint8 ret = 0;
 //#define CHECK_MAXIMA_SIDES
 #ifdef CHECK_MAXIMA_SIDES
-    ret = (_index > _width && _index < (_height -1)*_width && 
-            _pAccum[_index] >  _pAccum[_index - 1] && 
+    ret = (_index > _width && _index < (_height -1)*_width &&
+            _pAccum[_index] >  _pAccum[_index - 1] &&
             _pAccum[_index] >= _pAccum[_index + 1] &&
-            _pAccum[_index] >  _pAccum[_index - _width] && 
+            _pAccum[_index] >  _pAccum[_index - _width] &&
             _pAccum[_index] >= _pAccum[_index + _width] ) ? 0 : 1;
 #else
     uint32 local_max = _pAccum[_index];
@@ -274,11 +274,11 @@ create_workspace_hough(const uint32 _width, const uint32 _height)
 {
     SHoughWorkspace * work = (SHoughWorkspace *)malloc(sizeof(SHoughWorkspace));
 
-    
+
     work->width    = _width;
     work->height   = _height;
-    work->accMaxR    = ((sqrt(2.0) * (double)((_height>_width)?_height:_width)) / 2.0);  
-    work->accHeight  = (uint32)(work->accMaxR * 2.0 + 0.5); // -r -> +r  
+    work->accMaxR    = ((sqrt(2.0) * (double)((_height>_width)?_height:_width)) / 2.0);
+    work->accHeight  = (uint32)(work->accMaxR * 2.0 + 0.5); // -r -> +r
     work->accWidth   = 180;
     work->pAccum     = (uint32 *)malloc(work->accWidth * work->accHeight * sizeof(uint32));
     work->accCenterX = _width >> 1;
@@ -309,10 +309,10 @@ reset_workspace_hough(SHoughWorkspace *_pWorkspace)
     _pWorkspace->numCandidates = 0;
 }
 //-------------------------------------
-void 
+void
 release_workspace_hough(SHoughWorkspace *_pWorkspace)
 {
-    if(_pWorkspace != 0x0) 
+    if(_pWorkspace != 0x0)
     {
         _pWorkspace->numCandidates = 0;
         if(_pWorkspace->pAccum != 0x0)
