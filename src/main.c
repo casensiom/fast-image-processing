@@ -144,7 +144,7 @@ main(int argc, char *argv[])
             }
         }
         save_image(input_filename, &imgRGB);
-        error = LE_NO_ERROR;    
+        error = LE_NO_ERROR;
     }
 
     if(error == LE_NO_ERROR)
@@ -314,7 +314,7 @@ void draw(SImage *_pImg, float _theta, float _rho)
     // coefA = (y - y0) / (x - x0) => (a / -b) => m
     // _r / b
     // coefB = y0 - (coefA * x0) => (b * _rho) - ((a / -b) *  a * _rho)
-    // 
+    //
     double      coefA = ((x != x0) ? ((y - y0) / (x - x0)) : 0.0);
     double      coefB = y0 - (coefA * x0);
 
@@ -362,13 +362,13 @@ void draw(SImage *_pImg, float _theta, float _rho)
             ++i;
         }
     }
-    else 
+    else
     {
         //  http://www.keymolen.com/2013/05/hough-transformation-c-implementation.html
         i = 0;
         if(_theta >= (M_PI/4) && _theta <= (3*M_PI/4))
         {
-            //y = (r - x cos(t)) / sin(t)  
+            //y = (r - x cos(t)) / sin(t)
             p[i].x = 0;
             p[i].y = (_rho + ((w/2) * a)) / b + (h/2);
             ++i;
@@ -378,14 +378,14 @@ void draw(SImage *_pImg, float _theta, float _rho)
         }
         else
         {
-            //x = (r - y sin(t)) / cos(t);  
+            //x = (r - y sin(t)) / cos(t);
             p[i].y = 0;
             p[i].x = (_rho + ((h/2) * b)) / a + (w/2);
             ++i;
             p[i].y = h - 0;
             p[i].x = (_rho - ((h/2) * b)) / a + (w/2);
             ++i;
-        }  
+        }
     }
 
     if(verbose == 1)
