@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="edge_detection" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="../../bin/edgesd" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+			</Target>
+			<Target title="Release">
+				<Option output="../../bin/edges" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+		</Compiler>
+		<Unit filename="../../src/bmp.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../src/bmp.h" />
+		<Unit filename="../../src/canny.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../src/canny.h" />
+		<Unit filename="../../src/convolution.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../src/convolution.h" />
+		<Unit filename="../../src/hough.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../src/hough.h" />
+		<Unit filename="../../src/image.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../src/image.h" />
+		<Unit filename="../../src/main.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../src/timer.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../src/timer.h" />
+		<Unit filename="../../src/types.h" />
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
