@@ -2,5 +2,6 @@
 <CodeBlocks_workspace_file>
 	<Workspace title="Workspace">
 		<Project filename="edge_detection.cbp" />
+		<Project filename="crop.cbp" />
 	</Workspace>
 </CodeBlocks_workspace_file>

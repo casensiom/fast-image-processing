@@ -8,16 +8,17 @@ SImage create_image(uint32 _width, uint32 _height, EPixelFormat _format)
 {
     SImage img;
     reset_image(&img);
-
-    if(_width * _height > 0 && _format != PF_UNKNOWN)
+    uint32 size = (_width * _height * _format);
+    if(size > 0 && _format != PF_UNKNOWN)
     {
-        img.mpData = (uint8 *)malloc(_width * _height * _format);
+        img.mpData = (uint8 *)malloc(size);
         if(img.mpData != 0x0)
         {
             img.mWidth = _width;
             img.mHeight = _height;
             img.mLeap = 0;
             img.mBpp = _format;
+            memset(img.mpData, 0, size);
         }
     }
     return img;
